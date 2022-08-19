@@ -1,3 +1,23 @@
+metadata-osd-0.2.0 / 2022-08-20
+===============================
+ * Added: Media-type related config options:
+     enable_for_audio
+     enable_for_audio_withalbumart
+     enable_for_video
+     enable_for_image
+     autohide_for_audio
+     autohide_for_audio_withalbumart
+     autohide_for_video
+     autohide_for_image
+
+ * Removed: Autohide auto-decide config option:
+     key_toggleautohide_autodecide
+
+ * Changed: Minus character to underscore change
+     in both script name and config file name.
+     Existing configuration file with minus character
+     will still work (for now).
+
 metadata-osd-0.1.0 / 2022-06-18
 ===============================
  * Initial release
