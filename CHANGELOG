@@ -1,3 +1,7 @@
+Unreleased
+===============================
+ * Added: Config option to disable OSD-2
+
 metadata-osd-0.2.0 / 2022-08-20
 ===============================
  * Added: Media-type related config options:

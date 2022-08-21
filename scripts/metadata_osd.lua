@@ -34,6 +34,7 @@ local options = {
     enable_for_audio_withalbumart = true,
     enable_for_video = true,
     enable_for_image = true,
+    enable_osd_2 = true,
     autohide_for_audio = false,
     autohide_for_audio_withalbumart = false,
     autohide_for_video = true,
@@ -484,7 +485,7 @@ local function on_metadata_change(propertyname, propertyvalue)
     -- │ CHAPTER TITLE   │
     -- └─────────────────┘
     -- process metadata: Chapter Title
-    if str_isnonempty(propertyname) and propertyname == "chapter-metadata/title" and str_isnonempty(propertyvalue) then
+    if options.enable_osd_2 and str_isnonempty(propertyname) and propertyname == "chapter-metadata/title" and str_isnonempty(propertyvalue) then
         osd_overlay_osd_2.data =
             "{\\a" .. tostring(ass_alignment_centered + ass_alignment_midtitle) .. "}"
             .. "{\\bord" .. tostring(ass_borderwidth) .. "}"
