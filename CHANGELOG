@@ -1,3 +1,13 @@
+metadata-osd-0.4.0 / 2022-09-24
+===============================
+ * Tune metadata processing:
+     - Cut out and show just the year (not the full date, if present)
+     - Support more possible keys for <artist> metadata, namely:
+         - 'album_artist'
+         - 'composer'
+     - Show album's track if not equal to playlist's track
+       (playlists can be long and traversing multiple directories)
+
 metadata-osd-0.3.0 / 2022-08-31
 ===============================
  * Added: Config option to disable OSD-2

@@ -93,6 +93,10 @@ local function str_trunc(arg)
     return result
 end
 
+local function str_isempty(arg)
+    return type(arg) == "string" and string.len(arg) == 0
+end
+
 local function str_isnonempty(arg)
     return type(arg) == "string" and string.len(arg) > 0
 end
@@ -291,6 +295,15 @@ local function reset_usertoggled()
     show_statusosd()
 end
 
+local function cutout_4digit_str(s)
+    res = ""
+    if str_isnonempty(s) then
+        local i, j = string.find(s, '[%d][%d][%d][%d]')
+        res = string.sub(s, i, j)
+    end
+    return res
+end
+
 local function on_metadata_change(propertyname, propertyvalue)
     if type(propertyname.event) == "string" then
         propertyname = propertyname.event
@@ -306,8 +319,6 @@ local function on_metadata_change(propertyname, propertyvalue)
 
     local prop_meta_album     = mp.get_property("metadata/by-key/Album")
     local prop_meta_title     = mp.get_property("metadata/by-key/Title")
-    local prop_meta_reldate   = mp.get_property("metadata/by-key/Date")
-    local prop_meta_track     = mp.get_property("metadata/by-key/Track")
 
     local prop_playlist_curr  = mp.get_property("playlist-pos-1")
     local prop_playlist_total = mp.get_property("playlist-count")
@@ -315,9 +326,9 @@ local function on_metadata_change(propertyname, propertyvalue)
     local prop_chapters_total = mp.get_property("chapters")
     local prop_chaptertitle   = mp.get_property("chapter-list/" .. tostring(prop_chapter_curr) .. "/title")
 
-    local is_remote_src =
-        prop_fileformat == "hls" -- 'http live streaming'
-        or (prop_path ~= prop_streamfilename) -- if processed by yt-dlp / youtube-dl
+    local playing_file =
+        (prop_fileformat ~= "hls") and -- not 'http live streaming'
+        (prop_path == prop_streamfilename) -- not processed by yt-dlp/youtube-dl
 
     -- OSD-1 layout:
     -- ┌─────────────────┐
@@ -339,18 +350,20 @@ local function on_metadata_change(propertyname, propertyvalue)
         .. "{\\shad0}"
         .. string.rep(ass_newline(), 1) -- a bit down
 
-    -- Text Area 1
-    if is_remote_src then
-        -- process metadata: Uploader
-        local prop_uploader = mp.get_property_osd("metadata/by-key/Uploader")
+    -- ┌─────────────────┐
+    -- │ TEXT AREA 1     │
+    -- └─────────────────┘
+    if playing_file then
+        -- meta: Artist
+        local prop_meta_artist = mp.get_property("metadata/by-key/artist")
 
-        if str_isnonempty(prop_uploader) then
-            osd_str = osd_str
-                .. ass_styleoverride_bold(str_trunc(prop_uploader))
+        if str_isempty(prop_meta_artist) then
+            prop_meta_artist = mp.get_property("metadata/by-key/album_artist")
         end
-    else -- is file
-        -- process metadata: Artist
-        local prop_meta_artist = mp.get_property("metadata/by-key/Artist")
+
+        if str_isempty(prop_meta_artist) then
+            prop_meta_artist = mp.get_property("metadata/by-key/composer")
+        end
 
         if str_isnonempty(prop_meta_artist) then
             osd_str = osd_str
@@ -367,34 +380,50 @@ local function on_metadata_change(propertyname, propertyvalue)
                     .. ass_styleoverride_bold(str_trunc(foldername_artist))
             end
         end
+    else -- playing from remote source
+        -- meta: Uploader
+        local prop_uploader = mp.get_property_osd("metadata/by-key/Uploader")
+
+        if str_isnonempty(prop_uploader) then
+            osd_str = osd_str
+                .. ass_styleoverride_bold(str_trunc(prop_uploader))
+        end
     end
 
-    -- Divider area
+    -- ┌─────────────────┐
+    -- │ <DIVIDER AREA>  │
+    -- └─────────────────┘
     osd_str = osd_str
         .. string.rep(ass_newline(), 1)
 
-    -- Text Area 2
-    if is_remote_src then
-        -- <Empty currently>
-    else -- is file
+    -- ┌─────────────────┐
+    -- │ TEXT AREA 2     │
+    -- └─────────────────┘
+    if playing_file then
         -- For files with internal chapters ...
-        -- process metadata: Title (album name usually)
+        -- meta: Title (album name usually)
         if prop_chapter_curr and prop_chapters_total and str_isnonempty(prop_meta_title) then
             osd_str = osd_str
                 .. ass_styleoverride_bold(str_trunc(prop_meta_title))
 
-            -- process metadata: Track (release year usually)
+            -- meta: Track (release year _usually_)
+            local prop_meta_track = mp.get_property("metadata/by-key/Track")
+            prop_meta_track = cutout_4digit_str(prop_meta_track)
+
             if str_isnonempty(prop_meta_track) then
                 osd_str = osd_str
                     .. " (" .. prop_meta_track .. ")"
             end
 
-        -- process metadata: Album
+        -- meta: Album
         elseif str_isnonempty(prop_meta_album) then
             osd_str = osd_str
                 .. ass_styleoverride_bold(str_trunc(prop_meta_album))
 
-            -- process metadata: Album release date
+            -- meta: Album release date
+            local prop_meta_reldate   = mp.get_property("metadata/by-key/Date")
+            prop_meta_reldate = cutout_4digit_str(prop_meta_reldate)
+
             if str_isnonempty(prop_meta_reldate) then
                 osd_str = osd_str
                     .. " (" .. prop_meta_reldate .. ")"
@@ -411,31 +440,31 @@ local function on_metadata_change(propertyname, propertyvalue)
                     .. ass_styleoverride_bold(str_trunc(foldername_album))
             end
         end
+    else -- playing from remote source
+        -- <Text area empty currently>
     end
 
-    -- Divider area
+    -- ┌─────────────────┐
+    -- │ <DIVIDER AREA>  │
+    -- └─────────────────┘
     osd_str = osd_str
         .. string.rep(ass_newline(), 3)
 
-    -- Text Area 3
+    -- ┌─────────────────┐
+    -- │ TEXT AREA 3     │
+    -- └─────────────────┘
     osd_str = osd_str
         .. "{\\shad1}"
         .. "{\\fsp10}"
 
-    if is_remote_src then
-        -- process metadata: Media Title
-        if str_isnonempty(prop_mediatitle) then
-            osd_str = osd_str
-                .. ass_styleoverride_italic(str_trunc(prop_mediatitle))
-        end
-    else -- is file
+    if playing_file then
         -- For files with internal chapters ...
-        -- process metadata: Chapter title
+        -- meta: Chapter title
         if curr_mediatype ~= mediatype.VIDEO and prop_chapter_curr and prop_chapters_total and str_isnonempty(prop_chaptertitle) then
             osd_str = osd_str
                 .. ass_styleoverride_italic(str_trunc(prop_chaptertitle))
 
-        -- process metadata: Title
+        -- meta: Title
         elseif str_isnonempty(prop_meta_title) then
             osd_str = osd_str
                 .. ass_styleoverride_italic(str_trunc(prop_meta_title))
@@ -447,19 +476,29 @@ local function on_metadata_change(propertyname, propertyvalue)
             osd_str = osd_str
                 .. ass_styleoverride_italic(str_trunc(assumed_title))
         end
+    else -- playing from remote source
+        -- meta: Media Title
+        if str_isnonempty(prop_mediatitle) then
+            osd_str = osd_str
+                .. ass_styleoverride_italic(str_trunc(prop_mediatitle))
+        end
     end
 
     osd_str = osd_str
         .. "{\\fsp0}"
         .. "{\\shad0}"
 
-    -- Divider area
+    -- ┌─────────────────┐
+    -- │ <DIVIDER AREA>  │
+    -- └─────────────────┘
     osd_str = osd_str
         .. string.rep(ass_newline(), 1)
 
-    -- Text Area 4
+    -- ┌─────────────────┐
+    -- │ TEXT AREA 4     │
+    -- └─────────────────┘
     -- For files with chapters...
-    -- process metadata: Chapter current / chapters total
+    -- meta: Chapter current / chapters total
     if str_isnonempty(prop_chapter_curr) and str_isnonempty(prop_chapters_total) then
         osd_str = osd_str
             .. string.rep(ass_newline(), 3)
@@ -468,7 +507,7 @@ local function on_metadata_change(propertyname, propertyvalue)
             .. "/"
             .. tostring(prop_chapters_total)
 
-    -- process metadata: Playlist position
+    -- meta: Playlist position
     elseif str_isnonempty(prop_playlist_curr) and str_isnonempty(prop_playlist_total) then
         osd_str = osd_str
             .. string.rep(ass_newline(), 3)
@@ -476,6 +515,34 @@ local function on_metadata_change(propertyname, propertyvalue)
             .. tostring(prop_playlist_curr)
             .. "/"
             .. tostring(prop_playlist_total)
+
+        local prop_meta_track = mp.get_property("metadata/by-key/Track")
+
+        if str_isnonempty(prop_meta_track)
+        then
+            local i, j = string.find(prop_meta_track, '[%d]+')
+            if i and j
+            then
+                local prop_meta_track_digits = string.sub(prop_meta_track, i, j)
+                if str_isnonempty (prop_meta_track_digits)
+                then
+                    prop_playlist_curr_n = tonumber(prop_playlist_curr)
+                    prop_playlist_total_n = tonumber(prop_playlist_total)
+                    prop_meta_track_n = tonumber(prop_meta_track_digits)
+                    if prop_playlist_curr_n and
+                        prop_playlist_total_n and
+                        prop_meta_track_n
+                    then
+                        if prop_playlist_curr_n ~= prop_meta_track_n or
+                            prop_playlist_total_n == 1
+                        then
+                            osd_str = osd_str
+                                .. "  (Album Track: " .. prop_meta_track .. ")"
+                        end
+                    end
+                end
+            end
+        end
     end
 
     osd_overlay_osd_1.data = osd_str
@@ -484,7 +551,7 @@ local function on_metadata_change(propertyname, propertyvalue)
     -- ┌─────────────────┐
     -- │ CHAPTER TITLE   │
     -- └─────────────────┘
-    -- process metadata: Chapter Title
+    -- meta: Chapter Title
     if options.enable_osd_2 and str_isnonempty(propertyname) and propertyname == "chapter-metadata/title" and str_isnonempty(propertyvalue) then
         osd_overlay_osd_2.data =
             "{\\a" .. tostring(ass_alignment_centered + ass_alignment_midtitle) .. "}"
