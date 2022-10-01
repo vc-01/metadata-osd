@@ -1,3 +1,7 @@
+metadata-osd-0.4.1 / 2022-10-02
+===============================
+ * fix: Add missing check for year metadata pattern extraction
+
 metadata-osd-0.4.0 / 2022-09-24
 ===============================
  * Tune metadata processing:

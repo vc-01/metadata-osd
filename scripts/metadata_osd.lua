@@ -295,11 +295,13 @@ local function reset_usertoggled()
     show_statusosd()
 end
 
-local function cutout_4digit_str(s)
+local function str_capture4digits(s)
     res = ""
     if str_isnonempty(s) then
-        local i, j = string.find(s, '[%d][%d][%d][%d]')
-        res = string.sub(s, i, j)
+        local _, _, s_match = string.find(s, '([%d][%d][%d][%d])')
+        if s_match then
+            res = s_match
+        end
     end
     return res
 end
@@ -408,7 +410,7 @@ local function on_metadata_change(propertyname, propertyvalue)
 
             -- meta: Track (release year _usually_)
             local prop_meta_track = mp.get_property("metadata/by-key/Track")
-            prop_meta_track = cutout_4digit_str(prop_meta_track)
+            prop_meta_track = str_capture4digits(prop_meta_track)
 
             if str_isnonempty(prop_meta_track) then
                 osd_str = osd_str
@@ -422,7 +424,7 @@ local function on_metadata_change(propertyname, propertyvalue)
 
             -- meta: Album release date
             local prop_meta_reldate   = mp.get_property("metadata/by-key/Date")
-            prop_meta_reldate = cutout_4digit_str(prop_meta_reldate)
+            prop_meta_reldate = str_capture4digits(prop_meta_reldate)
 
             if str_isnonempty(prop_meta_reldate) then
                 osd_str = osd_str
