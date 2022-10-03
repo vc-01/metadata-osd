@@ -1,5 +1,5 @@
 --[[
-metadata_osd. Version 0.3.0
+metadata_osd. Version 0.4.1
 
 Copyright (c) 2022 Vladimir Chren
 
