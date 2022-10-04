@@ -1,3 +1,7 @@
+Unreleased
+===============================
+ * Truncate strings on UTF-8 encoded characters (in Linux)
+
 metadata-osd-0.4.1 / 2022-10-02
 ===============================
  * fix: Add missing check for year metadata pattern extraction

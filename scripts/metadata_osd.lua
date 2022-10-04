@@ -74,23 +74,171 @@ local osd_enabled_usertoggled = false
 local osd_autohide_usertoggled = false
 local curr_mediatype = mediatype.UNKNOWN
 local curr_state = state.OSD_HIDDEN
-local unicode_ellipsis = "\u{2026}"
 local osd_overlay_osd_1 = mp.create_osd_overlay("ass-events")
 local osd_overlay_osd_2 = mp.create_osd_overlay("ass-events")
 local osd_timer -- forward declaration
+local charencode_utf8 = false
+local unicode_ellipsis = "\u{2026}"
 
 -- String helper functions
 
-local function str_trunc(arg)
-    local result = arg
+local function utf8_nextcharoffs(u_b1, u_b2, u_b3, u_b4)
+    local nextcharoffs = nil
 
-    if type(arg) == "string" then
-        if string.len(arg) > options.osd_message_maxlength then
-            result = string.sub(arg, 0, options.osd_message_maxlength) .. unicode_ellipsis
+    -- UTF-8 Byte Sequences: Unicode Version 15.0.0, Section 3.9, Table 3-7
+    -- The Unicode Consortium. The Unicode Standard, Version 15.0.0, (Mountain View, CA: The Unicode Consortium, 2022. ISBN 978-1-936213-32-0)
+    -- https://www.unicode.org/versions/Unicode15.0.0/
+
+    -- U+0000..U+007F
+    if type(u_b1) == "number"
+    then
+        if u_b1 >= 0x00 and u_b1 <= 0x7F
+        then
+            nextcharoffs = 1
+        -- U+0080..U+07FF
+        elseif u_b1 >= 0xC2 and u_b1 <= 0xDF
+        then
+            if type(u_b2) == "number"
+            then
+                if u_b2 >= 0x80 and u_b2 <= 0xBF
+                then
+                    nextcharoffs = 2
+                end
+            end
+        -- U+0800..U+0FFF
+        elseif u_b1 == 0xE0
+        then
+            if type(u_b2) == "number"
+            then
+                if u_b2 >= 0xA0 and u_b2 <= 0xBF
+                then
+                    if type(u_b3) == "number"
+                    then
+                        if u_b3 >= 0x80 and u_b3 <= 0xBF
+                        then
+                            nextcharoffs = 3
+                        end
+                    end
+                end
+            end
+        -- U+1000..U+CFFF
+        elseif u_b1 >= 0xE1 and u_b1 <= 0xEC
+        then
+            if type(u_b2) == "number"
+            then
+                if u_b2 >= 0x80 and u_b2 <= 0xBF
+                then
+                    if type(u_b3) == "number"
+                    then
+                        if u_b3 >= 0x80 and u_b3 <= 0xBF
+                        then
+                            nextcharoffs = 3
+                        end
+                    end
+                end
+            end
+        -- U+D000..U+D7FF
+        elseif u_b1 == 0xED
+        then
+            if type(u_b2) == "number"
+            then
+                if u_b2 >= 0x80 and u_b2 <= 0x9F
+                then
+                    if type(u_b3) == "number"
+                    then
+                        if u_b3 >= 0x80 and u_b3 <= 0xBF
+                        then
+                            nextcharoffs = 3
+                        end
+                    end
+                end
+            end
+        -- U+E000..U+FFFF
+        elseif u_b1 >= 0xEE and u_b1 <= 0xEF
+        then
+            if type(u_b2) == "number"
+            then
+                if u_b2 >= 0x80 and u_b2 <= 0xBF
+                then
+                    if type(u_b3) == "number"
+                    then
+                        if u_b3 >= 0x80 and u_b3 <= 0xBF
+                        then
+                            nextcharoffs = 3
+                        end
+                    end
+                end
+            end
+        -- U+10000..U+3FFFF
+        elseif u_b1 == 0xF0
+        then
+            if type(u_b2) == "number"
+            then
+                if u_b2 >= 0x90 and u_b2 <= 0xBF
+                then
+                    if type(u_b3) == "number"
+                    then
+                        if u_b3 >= 0x80 and u_b3 <= 0xBF
+                        then
+                            if type(u_b4) == "number"
+                            then
+                                if u_b4 >= 0x80 and u_b4 <= 0xBF
+                                then
+                                    nextcharoffs = 4
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        -- U+40000..U+FFFFF
+        elseif u_b1 >= 0xF1 and u_b1 <= 0xF3
+        then
+            if type(u_b2) == "number"
+            then
+                if u_b2 >= 0x80 and u_b2 <= 0xBF
+                then
+                    if type(u_b3) == "number"
+                    then
+                        if u_b3 >= 0x80 and u_b3 <= 0xBF
+                        then
+                            if type(u_b4) == "number"
+                            then
+                                if u_b4 >= 0x80 and u_b4 <= 0xBF
+                                then
+                                    nextcharoffs = 4
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        -- U+100000..U+10FFFF
+        elseif u_b1 == 0xF4
+        then
+            if type(u_b2) == "number"
+            then
+                if u_b2 >= 0x80 and u_b2 <= 0x8F
+                then
+                    if type(u_b3) == "number"
+                    then
+                        if u_b3 >= 0x80 and u_b3 <= 0xBF
+                        then
+                            if type(u_b4) == "number"
+                            then
+                                if u_b4 >= 0x80 and u_b4 <= 0xBF
+                                then
+                                    nextcharoffs = 4
+                                end
+                            end
+                        end
+                    end
+                end
+            end
         end
     end
 
-    return result
+    return nextcharoffs
 end
 
 local function str_isempty(arg)
@@ -99,6 +247,58 @@ end
 
 local function str_isnonempty(arg)
     return type(arg) == "string" and string.len(arg) > 0
+end
+
+local function str_trunc(str)
+    local result = str
+    local str_truncpos = options.osd_message_maxlength
+
+    if str_isnonempty(str) and
+        str_truncpos > 0
+    then
+        if charencode_utf8
+        then
+            local str_bytepos = 1
+            local str_charcount = 0
+            local nextcharoffs = nil
+            local u_b1, u_b2, u_b3, u_b4 = nil, nil, nil, nil
+
+            repeat
+                u_b1, u_b2, u_b3, u_b4 =
+                    string.byte(str, str_bytepos, str_bytepos + 4)
+                nextcharoffs =
+                    utf8_nextcharoffs(
+                        u_b1, u_b2, u_b3, u_b4)
+                if nextcharoffs
+                then
+                    str_charcount = str_charcount + 1
+                    str_bytepos = str_bytepos + nextcharoffs
+                end
+            until nextcharoffs == nil or
+                str_charcount >= options.osd_message_maxlength
+
+            if u_b1 == nil and nextcharoffs == nil -- reached end of string
+            then
+                goto exit
+            elseif u_b1 ~= nil and nextcharoffs == nil -- found invalid utf-8 char
+            then
+                mp.msg.debug("str_trunc(): found invalid UTF-8 character; falling back to byte-oriented string truncate.")
+            elseif u_b1 ~= nil and nextcharoffs ~= nil -- string needs to be trunc-ed
+            then
+                str_truncpos = str_bytepos - 1
+            end
+        end
+
+        if string.len(str) > str_truncpos
+        then
+            result =
+                string.sub(str, 1, str_truncpos) ..
+                unicode_ellipsis
+        end
+    end
+
+    ::exit::
+    return result
 end
 
 local function bool2enabled_str(arg)
@@ -723,3 +923,8 @@ osd_timer = mp.add_timeout( -- create & start the timer
         osd_timeout_handler
         )
 osd_timer:kill() -- stop & reset the timer
+
+local ffi = require("ffi")
+if jit.os == "Linux" then
+    charencode_utf8 = true
+end
