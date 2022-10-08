@@ -1,5 +1,6 @@
 Unreleased
 ===============================
+ * Remove newline characters from string during truncate
  * Don't show album's track number by default
  * Add styling config options
  * Truncate strings on UTF-8 encoded characters (in Linux)

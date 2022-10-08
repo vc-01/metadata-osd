@@ -359,47 +359,50 @@ local function str_trunc(str)
     local result = str
     local str_truncpos = options.osd_message_maxlength
 
-    if str_isnonempty(str) and
-        str_truncpos > 0
+    if str_isnonempty(str)
     then
-        if charencode_utf8
+        str = string.gsub(str, "[\r\n]", "")
+        if str_truncpos > 0
         then
-            local str_bytepos = 1
-            local str_charcount = 0
-            local nextcharoffs = nil
-            local u_b1, u_b2, u_b3, u_b4 = nil, nil, nil, nil
+            if charencode_utf8
+            then
+                local str_bytepos = 1
+                local str_charcount = 0
+                local nextcharoffs = nil
+                local u_b1, u_b2, u_b3, u_b4 = nil, nil, nil, nil
 
-            repeat
-                u_b1, u_b2, u_b3, u_b4 =
-                    string.byte(str, str_bytepos, str_bytepos + 4)
-                nextcharoffs =
-                    utf8_nextcharoffs(
-                        u_b1, u_b2, u_b3, u_b4)
-                if nextcharoffs
+                repeat
+                    u_b1, u_b2, u_b3, u_b4 =
+                        string.byte(str, str_bytepos, str_bytepos + 4)
+                    nextcharoffs =
+                        utf8_nextcharoffs(
+                            u_b1, u_b2, u_b3, u_b4)
+                    if nextcharoffs
+                    then
+                        str_charcount = str_charcount + 1
+                        str_bytepos = str_bytepos + nextcharoffs
+                    end
+                until nextcharoffs == nil or
+                    str_charcount >= options.osd_message_maxlength
+
+                if u_b1 == nil and nextcharoffs == nil -- reached end of string
                 then
-                    str_charcount = str_charcount + 1
-                    str_bytepos = str_bytepos + nextcharoffs
+                    goto exit
+                elseif u_b1 ~= nil and nextcharoffs == nil -- found invalid utf-8 char
+                then
+                    mp.msg.debug("str_trunc(): found invalid UTF-8 character; falling back to byte-oriented string truncate.")
+                elseif u_b1 ~= nil and nextcharoffs ~= nil -- string needs to be trunc-ed
+                then
+                    str_truncpos = str_bytepos - 1
                 end
-            until nextcharoffs == nil or
-                str_charcount >= options.osd_message_maxlength
-
-            if u_b1 == nil and nextcharoffs == nil -- reached end of string
-            then
-                goto exit
-            elseif u_b1 ~= nil and nextcharoffs == nil -- found invalid utf-8 char
-            then
-                mp.msg.debug("str_trunc(): found invalid UTF-8 character; falling back to byte-oriented string truncate.")
-            elseif u_b1 ~= nil and nextcharoffs ~= nil -- string needs to be trunc-ed
-            then
-                str_truncpos = str_bytepos - 1
             end
-        end
 
-        if string.len(str) > str_truncpos
-        then
-            result =
-                string.sub(str, 1, str_truncpos) ..
-                unicode_ellipsis
+            if string.len(str) > str_truncpos
+            then
+                result =
+                    string.sub(str, 1, str_truncpos) ..
+                    unicode_ellipsis
+            end
         end
     end
 
@@ -1247,7 +1250,7 @@ local function on_metadata_change(propertyname, propertyvalue)
             ass_styleoverride_fontstyle(
                 ass_style.osd_1.textarea_4.fontstyle.is_italic,
                 ass_style.osd_1.textarea_4.fontstyle.is_bold,
-                str_trunc(text_area_4_str))
+                text_area_4_str)
     end
 
     osd_overlay_osd_1.data = osd_str
