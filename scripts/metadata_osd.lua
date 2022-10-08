@@ -29,25 +29,125 @@ require 'mp.msg'
 
 -- defaults
 local options = {
+    -- Master enable (on mpv start)
     enable_on_start = true,
+
+    -- Enable for tracks
     enable_for_audio = true,
     enable_for_audio_withalbumart = true,
     enable_for_video = true,
     enable_for_image = true,
+
+    -- Enable OSD-2
     enable_osd_2 = true,
+
+    -- Autohide for tracks
     autohide_for_audio = false,
     autohide_for_audio_withalbumart = false,
     autohide_for_video = true,
     autohide_for_image = true,
-    key_toggleenable = 'F1',
-    key_toggleautohide = 'F5',
-    key_toggleosd_1 = '',
-    key_toggleosd_2 = '',
-    key_reset_usertoggled = 'F6',
-    key_showstatusosd = '',
+
+    -- Autohide delay in seconds
     autohide_timeout_sec = 5,
     autohide_statusosd_timeout_sec = 10,
+
+    -- Key bindings
+
+    -- Master enable / disable switch key (killswitch)
+    key_toggleenable = 'F1',
+
+    -- OSD autohide enable / disable switch key
+    key_toggleautohide = 'F5',
+
+    -- Show / hide OSD-1 switch key (current autohide state applies)
+    key_toggleosd_1 = '',
+
+    -- Show / hide OSD-2 switch key (current autohide state applies)
+    key_toggleosd_2 = '',
+
+    -- Reset user-toggled switches
+    key_reset_usertoggled = 'F6',
+
+    -- Show status OSD key
+    key_showstatusosd = '',
+
     osd_message_maxlength = 96,
+
+    -- Styling options
+
+    -- OSD-1 layout:
+    -- ┌─────────────────┐
+    -- │ TEXT AREA 1     │
+    -- ├─────────────────┤
+    -- │ TEXT AREA 2     │
+    -- ├─────────────────┤
+    -- │ TEXT AREA 3     │
+    -- ├─────────────────┤
+    -- │ TEXT AREA 4     │
+    -- └─────────────────┘
+
+    -- OSD-2 layout:
+    -- ┌─────────────────┐
+    -- │ TEXT AREA 1     │
+    -- └─────────────────┘
+
+    -- Style: Alignment
+    -- Values may be (multiple separated by semicolon ';'):
+    --   left_justified (or) centered (or) right_justified ';' subtitle (or) midtitle (or) toptitle
+    style_alignment_osd_1 = "left_justified;midtitle",
+    style_alignment_osd_2 = "centered;midtitle",
+
+    -- Style: Border width of the outline around the text
+    -- Values may be:
+    --   0, 1, 2, 3 or 4
+    style_bord_osd_1 = 3,
+    style_bord_osd_2 = 3,
+
+    -- Style: Font style
+    -- Values may be (multiple separated by semicolon ';'):
+    --   regular (or) italic ';' bold
+    style_fontstyle_osd_1_textarea_1 = "bold",
+    style_fontstyle_osd_1_textarea_2 = "bold",
+    style_fontstyle_osd_1_textarea_2_releasedate = "regular",
+    style_fontstyle_osd_1_textarea_3 = "italic",
+    style_fontstyle_osd_1_textarea_4 = "regular",
+    style_fontstyle_osd_2_textarea_1 = "regular",
+
+    -- Style: Padding top (in number of lines)
+    -- Values may be:
+    --   0, 1, .. 40
+    style_paddingtop_osd_1_textarea_1 = 1,
+    style_paddingtop_osd_1_textarea_2 = 1,
+    style_paddingtop_osd_1_textarea_3 = 3,
+    style_paddingtop_osd_1_textarea_4 = 4,
+    style_paddingtop_osd_2_textarea_1 = 3,
+
+    -- Style: Shadow depth of the text
+    -- Values may be:
+    --   0, 1, 2, 3 or 4
+    style_shad_osd_1_textarea_1 = 0,
+    style_shad_osd_1_textarea_2 = 0,
+    style_shad_osd_1_textarea_3 = 1,
+    style_shad_osd_1_textarea_4 = 0,
+    style_shad_osd_2_textarea_1 = 0,
+
+    -- Style: Font scale (in percent)
+    -- Values may be:
+    --   10, 11, .. 400
+    style_fsc_osd_1_textarea_1 = 100,
+    style_fsc_osd_1_textarea_2 = 100,
+    style_fsc_osd_1_textarea_3 = 100,
+    style_fsc_osd_1_textarea_4 = 60,
+    style_fsc_osd_2_textarea_1 = 100,
+
+    -- Style: Distance between letters
+    -- Values may be:
+    --   0, 1, .. 40
+    style_fsp_osd_1_textarea_1 = 0,
+    style_fsp_osd_1_textarea_2 = 0,
+    style_fsp_osd_1_textarea_3 = 10,
+    style_fsp_osd_1_textarea_4 = 0,
+    style_fsp_osd_2_textarea_1 = 0,
 }
 
 read_options(options, "metadata-osd") -- underscore character blends in better,
@@ -301,6 +401,17 @@ local function str_trunc(str)
     return result
 end
 
+local function str_capture4digits(s)
+    res = ""
+    if str_isnonempty(s) then
+        local _, _, s_match = string.find(s, '([%d][%d][%d][%d])')
+        if s_match then
+            res = s_match
+        end
+    end
+    return res
+end
+
 local function bool2enabled_str(arg)
     local result = "Disabled"
 
@@ -311,26 +422,389 @@ local function bool2enabled_str(arg)
     return result
 end
 
--- ASS functions
---   link to spec: http://www.tcax.org/docs/ass-specs.htm
+-- SSA/ASS helper functions
+--   spec. url: http://www.tcax.org/docs/ass-specs.htm
 
-local ass_alignment_leftjustified = 1
-local ass_alignment_centered = 2
-local ass_alignment_rightjustified = 3
-local ass_alignment_toptitle = 4
-local ass_alignment_midtitle = 8
-local ass_borderwidth = 3
+local function ass_styleoverride_fontstyle(italic, bold, str)
+    res = ""
 
-local function ass_styleoverride_bold(arg)
-    return "{\\b1}" .. arg .. "{\\b0}"
-end
+    if italic
+    then
+        res = res ..
+            "{\\i1}"
+    end
 
-local function ass_styleoverride_italic(arg)
-    return "{\\i1}" .. arg .. "{\\i0}"
+    if bold
+    then
+        res = res ..
+            "{\\b1}"
+    end
+
+    res = res ..
+        str
+
+    if bold
+    then
+        res = res ..
+            "{\\b0}"
+    end
+
+    if italic
+    then
+        res = res ..
+            "{\\i0}"
+    end
+
+    return res
 end
 
 local function ass_newline()
     return "\\N"
+end
+
+local function str_split_styleoption(styleopt_str)
+    local styleopt_pass1 = nil
+    local styleopt_pass2 = nil
+    local res_t = {}
+
+    if str_isnonempty(styleopt_str)
+    then
+        for styleopt_pass1 in string.gmatch(styleopt_str, '([^;]+)')
+        do
+            styleopt_pass2 =
+                string.match(
+                    styleopt_pass1, '^[%s%p]*(.-)[%s%p]*$')
+
+            if str_isnonempty(styleopt_pass2)
+            then
+                mp.msg.debug("str_split_styleoption(): found: " .. styleopt_pass2)
+                res_t[styleopt_pass2] = true
+            end
+        end
+    end
+
+    return res_t
+end
+
+local function parse_styleoption_int_inrange(styleopt_int, range_min, range_max)
+    local styleopt_int = tonumber(styleopt_int)
+    local res = nil
+
+    if styleopt_int
+    then
+        styleopt_int = math.floor(styleopt_int)
+
+        if styleopt_int >= range_min and styleopt_int <= range_max
+        then
+            res = styleopt_int
+        end
+    end
+
+    return res
+end
+
+local function parse_styleoption_alignment(styleopt_alignment)
+    local ass_alignment_leftjustified = 1
+    local ass_alignment_centered = 2
+    local ass_alignment_rightjustified = 3
+    local ass_alignment_subtitle = 0
+    local ass_alignment_toptitle = 4
+    local ass_alignment_midtitle = 8
+
+    local opt_t =
+        str_split_styleoption(
+            styleopt_alignment)
+
+    local alignment_justification =
+        ass_alignment_centered
+
+    if opt_t["left_justified"]
+    then
+        alignment_justification =
+            ass_alignment_leftjustified
+    elseif opt_t["centered"]
+    then
+        alignment_justification =
+            ass_alignment_centered
+    elseif opt_t["right_justified"]
+    then
+        alignment_justification =
+            ass_alignment_rightjustified
+    end
+
+    local alignment_position =
+        ass_alignment_midtitle
+
+    if opt_t["subtitle"]
+    then
+        alignment_position =
+            ass_alignment_subtitle
+    elseif opt_t["toptitle"]
+    then
+        alignment_position =
+            ass_alignment_toptitle
+    elseif opt_t["midtitle"]
+    then
+        alignment_position =
+            ass_alignment_midtitle
+    end
+
+    return
+        "{\\a" ..
+        tostring(alignment_justification + alignment_position) ..
+        "}"
+end
+
+local function parse_styleoption_bord(styleopt_bord)
+    local res_bord = 0
+    local styleopt_bord =
+        parse_styleoption_int_inrange(styleopt_bord, 0, 4)
+
+    if styleopt_bord
+    then
+        res_bord = styleopt_bord
+    end
+
+    return
+        "{\\bord" ..
+        tostring(res_bord) ..
+        "}"
+end
+
+local function parse_styleoption_paddingtop(styleopt_paddingtop)
+    local res_paddingtop = 0
+    local styleopt_paddingtop =
+        parse_styleoption_int_inrange(styleopt_paddingtop, 0, 40)
+
+    if styleopt_paddingtop
+    then
+        res_paddingtop = styleopt_paddingtop
+    end
+
+    return
+        string.rep(ass_newline(), res_paddingtop)
+end
+
+local function parse_styleoption_shad(styleopt_shad)
+    local res_shad = 0
+    local styleopt_shad =
+        parse_styleoption_int_inrange(styleopt_shad, 0, 4)
+
+    if styleopt_shad
+    then
+        res_shad = styleopt_shad
+    end
+
+    return
+        "{\\shad" ..
+        tostring(res_shad) ..
+        "}"
+end
+
+local function parse_styleoption_fsc(styleopt_fsc)
+    local res_fsc = 100
+    local styleopt_fsc =
+        parse_styleoption_int_inrange(styleopt_fsc, 10, 400)
+
+    if styleopt_fsc
+    then
+        res_fsc = styleopt_fsc
+    end
+
+    return
+        "{\\fscx" ..
+        tostring(res_fsc) ..
+        "}" ..
+        "{\\fscy" ..
+        tostring(res_fsc) ..
+        "}"
+end
+
+local function parse_styleoption_fsp(styleopt_fsp)
+    local res_fsp = 0
+    local styleopt_fsp =
+        parse_styleoption_int_inrange(styleopt_fsp, 0, 40)
+
+    if styleopt_fsp
+    then
+        res_fsp = styleopt_fsp
+    end
+
+    return
+        "{\\fsp" ..
+        tostring(res_fsp) ..
+        "}"
+end
+
+local function parse_styleoption_fontstyle(styleopt_fontstyle)
+    local opt_t =
+        str_split_styleoption(
+            styleopt_fontstyle)
+    local italic, bold = false, false
+
+    if opt_t["italic"]
+    then
+        italic = true
+    end
+
+    if opt_t["bold"]
+    then
+        bold = true
+    end
+
+    return italic, bold
+end
+
+local ass_style = {}
+
+local function parse_style_options()
+    ass_style.osd_1 = {}
+    ass_style.osd_1.textarea_1 = {}
+    ass_style.osd_1.textarea_2 = {}
+    ass_style.osd_1.textarea_2_releasedate = {}
+    ass_style.osd_1.textarea_3 = {}
+    ass_style.osd_1.textarea_4 = {}
+    ass_style.osd_2 = {}
+    ass_style.osd_2.textarea_1 = {}
+
+    -- Style: Alignment
+    ass_style.osd_1.alignment =
+        parse_styleoption_alignment(
+            options.style_alignment_osd_1)
+
+    ass_style.osd_2.alignment =
+        parse_styleoption_alignment(
+            options.style_alignment_osd_2)
+
+    -- Style: Border width of the outline around the text
+    ass_style.osd_1.bord =
+        parse_styleoption_bord(
+            options.style_bord_osd_1)
+
+    ass_style.osd_2.bord =
+        parse_styleoption_bord(
+            options.style_bord_osd_2)
+
+    -- Style: Font style
+    ass_style.osd_1.textarea_1.fontstyle = {}
+    ass_style.osd_1.textarea_1.fontstyle.is_italic,
+    ass_style.osd_1.textarea_1.fontstyle.is_bold =
+        parse_styleoption_fontstyle(
+            options.style_fontstyle_osd_1_textarea_1)
+
+    ass_style.osd_1.textarea_2.fontstyle = {}
+    ass_style.osd_1.textarea_2.fontstyle.is_italic,
+    ass_style.osd_1.textarea_2.fontstyle.is_bold =
+        parse_styleoption_fontstyle(
+            options.style_fontstyle_osd_1_textarea_2)
+
+    ass_style.osd_1.textarea_2_releasedate.fontstyle = {}
+    ass_style.osd_1.textarea_2_releasedate.fontstyle.is_italic,
+    ass_style.osd_1.textarea_2_releasedate.fontstyle.is_bold =
+        parse_styleoption_fontstyle(
+            options.style_fontstyle_osd_1_textarea_2_releasedate)
+
+    ass_style.osd_1.textarea_3.fontstyle = {}
+    ass_style.osd_1.textarea_3.fontstyle.is_italic,
+    ass_style.osd_1.textarea_3.fontstyle.is_bold =
+        parse_styleoption_fontstyle(
+            options.style_fontstyle_osd_1_textarea_3)
+
+    ass_style.osd_1.textarea_4.fontstyle = {}
+    ass_style.osd_1.textarea_4.fontstyle.is_italic,
+    ass_style.osd_1.textarea_4.fontstyle.is_bold =
+        parse_styleoption_fontstyle(
+            options.style_fontstyle_osd_1_textarea_4)
+
+    ass_style.osd_2.textarea_1.fontstyle = {}
+    ass_style.osd_2.textarea_1.fontstyle.is_italic,
+    ass_style.osd_2.textarea_1.fontstyle.is_bold =
+        parse_styleoption_fontstyle(
+            options.style_fontstyle_osd_2_textarea_1)
+
+    -- Style: Padding top
+    ass_style.osd_1.textarea_1.paddingtop =
+        parse_styleoption_paddingtop(
+            options.style_paddingtop_osd_1_textarea_1)
+
+    ass_style.osd_1.textarea_2.paddingtop =
+        parse_styleoption_paddingtop(
+            options.style_paddingtop_osd_1_textarea_2)
+
+    ass_style.osd_1.textarea_3.paddingtop =
+        parse_styleoption_paddingtop(
+            options.style_paddingtop_osd_1_textarea_3)
+
+    ass_style.osd_1.textarea_4.paddingtop =
+        parse_styleoption_paddingtop(
+            options.style_paddingtop_osd_1_textarea_4)
+
+    ass_style.osd_2.textarea_1.paddingtop =
+        parse_styleoption_paddingtop(
+            options.style_paddingtop_osd_2_textarea_1)
+
+    -- Style: Shadow depth of the text
+    ass_style.osd_1.textarea_1.shad =
+        parse_styleoption_shad(
+            options.style_shad_osd_1_textarea_1)
+
+    ass_style.osd_1.textarea_2.shad =
+        parse_styleoption_shad(
+            options.style_shad_osd_1_textarea_2)
+
+    ass_style.osd_1.textarea_3.shad =
+        parse_styleoption_shad(
+            options.style_shad_osd_1_textarea_3)
+
+    ass_style.osd_1.textarea_4.shad =
+        parse_styleoption_shad(
+            options.style_shad_osd_1_textarea_4)
+
+    ass_style.osd_2.textarea_1.shad =
+        parse_styleoption_shad(
+            options.style_shad_osd_2_textarea_1)
+
+    -- Style: Font scale in percent
+    ass_style.osd_1.textarea_1.fsc =
+        parse_styleoption_fsc(
+            options.style_fsc_osd_1_textarea_1)
+
+    ass_style.osd_1.textarea_2.fsc =
+        parse_styleoption_fsc(
+            options.style_fsc_osd_1_textarea_2)
+
+    ass_style.osd_1.textarea_3.fsc =
+        parse_styleoption_fsc(
+            options.style_fsc_osd_1_textarea_3)
+
+    ass_style.osd_1.textarea_4.fsc =
+        parse_styleoption_fsc(
+            options.style_fsc_osd_1_textarea_4)
+
+    ass_style.osd_2.textarea_1.fsc =
+        parse_styleoption_fsc(
+            options.style_fsc_osd_2_textarea_1)
+
+    -- Style: Distance between letters
+    ass_style.osd_1.textarea_1.fsp =
+        parse_styleoption_fsp(
+            options.style_fsp_osd_1_textarea_1)
+
+    ass_style.osd_1.textarea_2.fsp =
+        parse_styleoption_fsp(
+            options.style_fsp_osd_1_textarea_2)
+
+    ass_style.osd_1.textarea_3.fsp =
+        parse_styleoption_fsp(
+            options.style_fsp_osd_1_textarea_3)
+
+    ass_style.osd_1.textarea_4.fsp =
+        parse_styleoption_fsp(
+            options.style_fsp_osd_1_textarea_4)
+
+    ass_style.osd_2.textarea_1.fsp =
+        parse_styleoption_fsp(
+            options.style_fsp_osd_2_textarea_1)
 end
 
 -- OSD functions
@@ -349,7 +823,7 @@ local function show_statusosd()
             "Metadata OSD: Disabled " ..
             "(" .. options.key_toggleenable .. ")",
             1 -- hide abruptly after one second,
-              -- quitting ought to be quick
+              -- exiting ought to be quick
             )
     end
 end
@@ -495,17 +969,6 @@ local function reset_usertoggled()
     show_statusosd()
 end
 
-local function str_capture4digits(s)
-    res = ""
-    if str_isnonempty(s) then
-        local _, _, s_match = string.find(s, '([%d][%d][%d][%d])')
-        if s_match then
-            res = s_match
-        end
-    end
-    return res
-end
-
 local function on_metadata_change(propertyname, propertyvalue)
     if type(propertyname.event) == "string" then
         propertyname = propertyname.event
@@ -538,23 +1001,20 @@ local function on_metadata_change(propertyname, propertyvalue)
     -- ├─────────────────┤
     -- │ TEXT AREA 2     │
     -- ├─────────────────┤
-    -- │ <DIVIDER AREA>  │
-    -- ├─────────────────┤
     -- │ TEXT AREA 3     │
-    -- ├─────────────────┤
-    -- │ <DIVIDER AREA>  │
     -- ├─────────────────┤
     -- │ TEXT AREA 4     │
     -- └─────────────────┘
 
-    local osd_str = "{\\a" .. tostring(ass_alignment_leftjustified + ass_alignment_midtitle) .. "}"
-        .. "{\\bord" .. tostring(ass_borderwidth) .. "}"
-        .. "{\\shad0}"
-        .. string.rep(ass_newline(), 1) -- a bit down
+    local osd_str =
+        ass_style.osd_1.alignment ..
+        ass_style.osd_1.bord
 
     -- ┌─────────────────┐
     -- │ TEXT AREA 1     │
     -- └─────────────────┘
+    local text_area_1_str = nil
+
     if playing_file then
         -- meta: Artist
         local prop_meta_artist = mp.get_property("metadata/by-key/artist")
@@ -568,8 +1028,7 @@ local function on_metadata_change(propertyname, propertyvalue)
         end
 
         if str_isnonempty(prop_meta_artist) then
-            osd_str = osd_str
-                .. ass_styleoverride_bold(str_trunc(prop_meta_artist))
+            text_area_1_str = prop_meta_artist
 
         -- Foldername-artist fallback
         else
@@ -578,8 +1037,7 @@ local function on_metadata_change(propertyname, propertyvalue)
             if prop_path:match(folder_upup_pattern) then
                 foldername_artist = prop_path:gsub(folder_upup_pattern, "%1")
                 foldername_artist = foldername_artist:gsub("_", " ")
-                osd_str = osd_str
-                    .. ass_styleoverride_bold(str_trunc(foldername_artist))
+                text_area_1_str = foldername_artist
             end
         end
     else -- playing from remote source
@@ -587,48 +1045,55 @@ local function on_metadata_change(propertyname, propertyvalue)
         local prop_uploader = mp.get_property_osd("metadata/by-key/Uploader")
 
         if str_isnonempty(prop_uploader) then
-            osd_str = osd_str
-                .. ass_styleoverride_bold(str_trunc(prop_uploader))
+            text_area_1_str = prop_uploader
         end
     end
 
-    -- ┌─────────────────┐
-    -- │ <DIVIDER AREA>  │
-    -- └─────────────────┘
-    osd_str = osd_str
-        .. string.rep(ass_newline(), 1)
+    osd_str = osd_str ..
+        ass_style.osd_1.textarea_1.paddingtop
+
+    if text_area_1_str
+    then
+        osd_str = osd_str ..
+            ass_style.osd_1.textarea_1.shad ..
+            ass_style.osd_1.textarea_1.fsc ..
+            ass_style.osd_1.textarea_1.fsp ..
+            ass_styleoverride_fontstyle(
+                ass_style.osd_1.textarea_1.fontstyle.is_italic,
+                ass_style.osd_1.textarea_1.fontstyle.is_bold,
+                str_trunc(text_area_1_str))
+    end
 
     -- ┌─────────────────┐
     -- │ TEXT AREA 2     │
     -- └─────────────────┘
+    local text_area_2_str = nil
+    local text_area_2_releasedate_str = nil
+
     if playing_file then
         -- For files with internal chapters ...
         -- meta: Title (album name usually)
         if prop_chapter_curr and prop_chapters_total and str_isnonempty(prop_meta_title) then
-            osd_str = osd_str
-                .. ass_styleoverride_bold(str_trunc(prop_meta_title))
+            text_area_2_str = prop_meta_title
 
             -- meta: Track (release year _usually_)
             local prop_meta_track = mp.get_property("metadata/by-key/Track")
             prop_meta_track = str_capture4digits(prop_meta_track)
 
             if str_isnonempty(prop_meta_track) then
-                osd_str = osd_str
-                    .. " (" .. prop_meta_track .. ")"
+                text_area_2_releasedate_str = " (" .. prop_meta_track .. ")"
             end
 
         -- meta: Album
         elseif str_isnonempty(prop_meta_album) then
-            osd_str = osd_str
-                .. ass_styleoverride_bold(str_trunc(prop_meta_album))
+            text_area_2_str = prop_meta_album
 
             -- meta: Album release date
             local prop_meta_reldate   = mp.get_property("metadata/by-key/Date")
             prop_meta_reldate = str_capture4digits(prop_meta_reldate)
 
             if str_isnonempty(prop_meta_reldate) then
-                osd_str = osd_str
-                    .. " (" .. prop_meta_reldate .. ")"
+                text_area_2_releasedate_str = " (" .. prop_meta_reldate .. ")"
             end
 
         -- Foldername-album fallback
@@ -638,85 +1103,99 @@ local function on_metadata_change(propertyname, propertyvalue)
             if prop_path:match(folder_up_pattern) then
                 foldername_album = prop_path:gsub(folder_up_pattern, "%1")
                 foldername_album = foldername_album:gsub("_", " ")
-                osd_str = osd_str
-                    .. ass_styleoverride_bold(str_trunc(foldername_album))
+                text_area_2_str = foldername_album
             end
         end
     else -- playing from remote source
-        -- <Text area empty currently>
+        -- <Text area empty in this release>
     end
 
-    -- ┌─────────────────┐
-    -- │ <DIVIDER AREA>  │
-    -- └─────────────────┘
-    osd_str = osd_str
-        .. string.rep(ass_newline(), 3)
+    osd_str = osd_str ..
+        ass_style.osd_1.textarea_2.paddingtop
+
+    if text_area_2_str
+    then
+        osd_str = osd_str ..
+            ass_style.osd_1.textarea_2.shad ..
+            ass_style.osd_1.textarea_2.fsp ..
+            ass_style.osd_1.textarea_2.fsc ..
+            ass_styleoverride_fontstyle(
+                ass_style.osd_1.textarea_2.fontstyle.is_italic,
+                ass_style.osd_1.textarea_2.fontstyle.is_bold,
+                str_trunc(text_area_2_str))
+
+        if text_area_2_releasedate_str
+        then
+            osd_str = osd_str ..
+                ass_styleoverride_fontstyle(
+                    ass_style.osd_1.textarea_2_releasedate.fontstyle.is_italic,
+                    ass_style.osd_1.textarea_2_releasedate.fontstyle.is_bold,
+                    text_area_2_releasedate_str)
+        end
+    end
 
     -- ┌─────────────────┐
     -- │ TEXT AREA 3     │
     -- └─────────────────┘
-    osd_str = osd_str
-        .. "{\\shad1}"
-        .. "{\\fsp10}"
+    local text_area_3_str = nil
 
     if playing_file then
         -- For files with internal chapters ...
         -- meta: Chapter title
         if curr_mediatype ~= mediatype.VIDEO and prop_chapter_curr and prop_chapters_total and str_isnonempty(prop_chaptertitle) then
-            osd_str = osd_str
-                .. ass_styleoverride_italic(str_trunc(prop_chaptertitle))
+            text_area_3_str = prop_chaptertitle
 
         -- meta: Title
         elseif str_isnonempty(prop_meta_title) then
-            osd_str = osd_str
-                .. ass_styleoverride_italic(str_trunc(prop_meta_title))
+            text_area_3_str = prop_meta_title
 
         -- Filename fallback
         else
             filename_noext = mp.get_property_osd("filename/no-ext")
             assumed_title = filename_noext:gsub("_", " ")
-            osd_str = osd_str
-                .. ass_styleoverride_italic(str_trunc(assumed_title))
+            text_area_3_str = assumed_title
         end
     else -- playing from remote source
         -- meta: Media Title
         if str_isnonempty(prop_mediatitle) then
-            osd_str = osd_str
-                .. ass_styleoverride_italic(str_trunc(prop_mediatitle))
+            text_area_3_str = prop_mediatitle
         end
     end
 
-    osd_str = osd_str
-        .. "{\\fsp0}"
-        .. "{\\shad0}"
+    osd_str = osd_str ..
+        ass_style.osd_1.textarea_3.paddingtop
 
-    -- ┌─────────────────┐
-    -- │ <DIVIDER AREA>  │
-    -- └─────────────────┘
-    osd_str = osd_str
-        .. string.rep(ass_newline(), 1)
+    if text_area_3_str
+    then
+        osd_str = osd_str ..
+            ass_style.osd_1.textarea_3.shad ..
+            ass_style.osd_1.textarea_3.fsc ..
+            ass_style.osd_1.textarea_3.fsp ..
+            ass_styleoverride_fontstyle(
+                ass_style.osd_1.textarea_3.fontstyle.is_italic,
+                ass_style.osd_1.textarea_3.fontstyle.is_bold,
+                str_trunc(text_area_3_str))
+    end
 
     -- ┌─────────────────┐
     -- │ TEXT AREA 4     │
     -- └─────────────────┘
+    local text_area_4_str = nil
+
     -- For files with chapters...
     -- meta: Chapter current / chapters total
     if str_isnonempty(prop_chapter_curr) and str_isnonempty(prop_chapters_total) then
-        osd_str = osd_str
-            .. string.rep(ass_newline(), 3)
-            .. "{\\fscx60}{\\fscy60}"
-            .. tostring(prop_chapter_curr + 1)
-            .. "/"
-            .. tostring(prop_chapters_total)
+        text_area_4_str =
+            tostring(prop_chapter_curr + 1) ..
+            "/" ..
+            tostring(prop_chapters_total)
 
     -- meta: Playlist position
     elseif str_isnonempty(prop_playlist_curr) and str_isnonempty(prop_playlist_total) then
-        osd_str = osd_str
-            .. string.rep(ass_newline(), 3)
-            .. "{\\fscx60}{\\fscy60}"
-            .. tostring(prop_playlist_curr)
-            .. "/"
-            .. tostring(prop_playlist_total)
+        text_area_4_str =
+            tostring(prop_playlist_curr) ..
+            "/" ..
+            tostring(prop_playlist_total)
 
         local prop_meta_track = mp.get_property("metadata/by-key/Track")
 
@@ -738,8 +1217,8 @@ local function on_metadata_change(propertyname, propertyvalue)
                         if prop_playlist_curr_n ~= prop_meta_track_n or
                             prop_playlist_total_n == 1
                         then
-                            osd_str = osd_str
-                                .. "  (Album Track: " .. prop_meta_track .. ")"
+                            text_area_4_str = text_area_4_str ..
+                                "  (Album Track: " .. prop_meta_track .. ")"
                         end
                     end
                 end
@@ -747,21 +1226,40 @@ local function on_metadata_change(propertyname, propertyvalue)
         end
     end
 
+    osd_str = osd_str ..
+        ass_style.osd_1.textarea_4.paddingtop
+
+    if text_area_4_str
+    then
+        osd_str = osd_str ..
+            ass_style.osd_1.textarea_4.shad ..
+            ass_style.osd_1.textarea_4.fsc ..
+            ass_style.osd_1.textarea_4.fsp ..
+            ass_styleoverride_fontstyle(
+                ass_style.osd_1.textarea_4.fontstyle.is_italic,
+                ass_style.osd_1.textarea_4.fontstyle.is_bold,
+                str_trunc(text_area_4_str))
+    end
+
     osd_overlay_osd_1.data = osd_str
 
     -- OSD-2 layout:
     -- ┌─────────────────┐
-    -- │ CHAPTER TITLE   │
+    -- │ TEXT AREA 1     │
     -- └─────────────────┘
     -- meta: Chapter Title
     if options.enable_osd_2 and str_isnonempty(propertyname) and propertyname == "chapter-metadata/title" and str_isnonempty(propertyvalue) then
         osd_overlay_osd_2.data =
-            "{\\a" .. tostring(ass_alignment_centered + ass_alignment_midtitle) .. "}"
-            .. "{\\bord" .. tostring(ass_borderwidth) .. "}"
-            .. "{\\shad0}"
-            .. string.rep(ass_newline(), 3) -- a bit down
-            .. str_trunc(propertyvalue)
-            .. "{\\a0}"
+            ass_style.osd_2.alignment ..
+            ass_style.osd_2.bord ..
+            ass_style.osd_2.textarea_1.paddingtop ..
+            ass_style.osd_2.textarea_1.shad ..
+            ass_style.osd_2.textarea_1.fsc ..
+            ass_style.osd_2.textarea_1.fsp ..
+            ass_styleoverride_fontstyle(
+                ass_style.osd_2.textarea_1.fontstyle.is_italic,
+                ass_style.osd_2.textarea_1.fontstyle.is_bold,
+                str_trunc(propertyvalue))
     end
 
     if str_isnonempty(propertyname) and propertyname == "chapter-metadata/title" and (curr_state == state.SHOWING_OSD_2 or (osd_autohide and curr_state == state.OSD_HIDDEN)) then
@@ -928,3 +1426,5 @@ local ffi = require("ffi")
 if jit.os == "Linux" then
     charencode_utf8 = true
 end
+
+parse_style_options()

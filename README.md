@@ -10,7 +10,7 @@ Configuration file with user options named `metadata_osd.conf` goes into `$XDG_C
 
 Configuration options (and their defaults in parenthesis) are the following:
 
-* _enable_on_start_ (yes) - enable OSD on mpv startup
+* _enable_on_start_ (yes) - enable OSD on mpv start
 * _enable_osd_2_ (yes) - static on / off switch for OSD-2
 * _key_toggleenable_ (F1) - master enable / disable switch key (killswitch)
 * _key_toggleautohide_ (F5) - OSD autohide enable / disable switch key

@@ -1,5 +1,6 @@
 Unreleased
 ===============================
+ * Add styling config options
  * Truncate strings on UTF-8 encoded characters (in Linux)
 
 metadata-osd-0.4.1 / 2022-10-02
