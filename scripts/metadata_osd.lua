@@ -71,6 +71,12 @@ local options = {
     -- Show status OSD key
     key_showstatusosd = '',
 
+    -- Show album's track number if not equal to playlist's track number;
+    -- Playlists can be long, traversing multiple directories.
+    -- This will show the current album's track number in addition
+    -- to the (encompassing) playlist position (if present in metadata).
+    show_albumtrack_number = false,
+
     osd_message_maxlength = 96,
 
     -- Styling options
@@ -1199,26 +1205,29 @@ local function on_metadata_change(propertyname, propertyvalue)
 
         local prop_meta_track = mp.get_property("metadata/by-key/Track")
 
-        if str_isnonempty(prop_meta_track)
+        if options.show_albumtrack_number
         then
-            local i, j = string.find(prop_meta_track, '[%d]+')
-            if i and j
+            if str_isnonempty(prop_meta_track)
             then
-                local prop_meta_track_digits = string.sub(prop_meta_track, i, j)
-                if str_isnonempty (prop_meta_track_digits)
+                local i, j = string.find(prop_meta_track, '[%d]+')
+                if i and j
                 then
-                    prop_playlist_curr_n = tonumber(prop_playlist_curr)
-                    prop_playlist_total_n = tonumber(prop_playlist_total)
-                    prop_meta_track_n = tonumber(prop_meta_track_digits)
-                    if prop_playlist_curr_n and
-                        prop_playlist_total_n and
-                        prop_meta_track_n
+                    local prop_meta_track_digits = string.sub(prop_meta_track, i, j)
+                    if str_isnonempty (prop_meta_track_digits)
                     then
-                        if prop_playlist_curr_n ~= prop_meta_track_n or
-                            prop_playlist_total_n == 1
+                        prop_playlist_curr_n = tonumber(prop_playlist_curr)
+                        prop_playlist_total_n = tonumber(prop_playlist_total)
+                        prop_meta_track_n = tonumber(prop_meta_track_digits)
+                        if prop_playlist_curr_n and
+                            prop_playlist_total_n and
+                            prop_meta_track_n
                         then
-                            text_area_4_str = text_area_4_str ..
-                                "  (Album Track: " .. prop_meta_track .. ")"
+                            if prop_playlist_curr_n ~= prop_meta_track_n or
+                                prop_playlist_total_n == 1
+                            then
+                                text_area_4_str = text_area_4_str ..
+                                    "  (Album Track: " .. prop_meta_track .. ")"
+                            end
                         end
                     end
                 end
