@@ -1,5 +1,6 @@
 Unreleased
 ===============================
+ * Move OSD further down in the screen area (one line)
  * Disable while viewing pictures by default
  * Match autohide delay for 'status osd' with 'metadata-osd'
  * Use pre-processed templates for OSD messages
