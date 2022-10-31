@@ -1,5 +1,6 @@
 Unreleased
 ===============================
+ * Match autohide delay for 'status osd' with 'metadata-osd'
  * Use pre-processed templates for OSD messages
  * Remove newline characters from string during truncate
  * Don't show album's track number by default

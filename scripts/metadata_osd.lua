@@ -49,7 +49,7 @@ local options = {
 
     -- Autohide delay in seconds
     autohide_timeout_sec = 5,
-    autohide_statusosd_timeout_sec = 10,
+    autohide_statusosd_timeout_sec = 5,
 
     -- Key bindings
 
