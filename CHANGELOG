@@ -1,5 +1,6 @@
 Unreleased
 ===============================
+ * Disable while viewing pictures by default
  * Match autohide delay for 'status osd' with 'metadata-osd'
  * Use pre-processed templates for OSD messages
  * Remove newline characters from string during truncate

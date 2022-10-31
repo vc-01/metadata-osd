@@ -36,7 +36,7 @@ local options = {
     enable_for_audio = true,
     enable_for_audio_withalbumart = true,
     enable_for_video = true,
-    enable_for_image = true,
+    enable_for_image = false,
 
     -- Enable OSD-2
     enable_osd_2 = true,

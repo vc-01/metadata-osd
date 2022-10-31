@@ -31,7 +31,7 @@ Configuration options (and their defaults in parenthesis) picked to mention are 
 ## Per media-type enable / autohide
 OSD enabled state or auto-hiding after a delay can be triggered either manually by pressing the relevant key (see _key_toggleenable_ and _key_toggleautohide_ above) or determined algorithmically based on the currently playing media type and its related config options settings.
 
-OSD is enabled by default for all recognizable media types, autohide is enabled for video files and while viewing pictures, autohide is disabled (that is, the OSD will stay visible) while playing music, as well as for music files with cover art picture.
+OSD is enabled by default for audio and video media, disabled while viewing pictures. Autohide feature is enabled for video, autohide is disabled (that is, the OSD will stay visible) while playing music, as well as for music files with cover art image.
 
 Currently recognizable media types are namely: _audio_, _audio_withalbumart_, _video_, _image_.
 
