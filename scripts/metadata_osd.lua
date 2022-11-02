@@ -22,10 +22,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]
 
-require 'mp'
-require 'mp.options'
-require 'mp.utils'
-require 'mp.msg'
+local opt = require 'mp.options'
+local msg = require 'mp.msg'
+local utils = require 'mp.utils'
 
 -- defaults
 local options = {
@@ -71,11 +70,17 @@ local options = {
     -- Show status OSD key
     key_showstatusosd = '',
 
-    -- Show album's track number if not equal to playlist's track number;
-    -- Playlists can be long, traversing multiple directories.
-    -- This will show the current album's track number in addition
+    -- Show current chapter number in addition to the current playlist position.
+    -- Can be useful also for audio files with internal chapters having a song
+    -- per chapter.
+    show_current_chapter_number = false,
+
+    -- Show album's current track number (if not equal to the current playlist
+    -- position); Playlists can be long, traversing multiple directories.
+    -- This will show the album's current track number in addition
     -- to the (encompassing) playlist position (if present in metadata).
-    show_albumtrack_number = false,
+    show_current_albumtrack_number = false,
+    show_albumtrack_number = false, -- old option name, * will be removed *
 
     osd_message_maxlength = 96,
 
@@ -166,9 +171,10 @@ local options = {
     style_fsp_osd_2_textarea_1 = 0,
 }
 
-read_options(options, "metadata-osd") -- underscore character blends in better,
-                                      -- keeping this for backward compat.
-read_options(options)
+opt.read_options(options, "metadata-osd") -- underscore character blends in better,
+                                      -- keeping this for backward compat.,
+                                      -- * will be removed *
+opt.read_options(options)
 
 local state = {
     SHOWING_OSD_1 = 1,
@@ -358,7 +364,7 @@ local function utf8_nextcharoffs(u_b1, u_b2, u_b3, u_b4)
 end
 
 local function str_isempty(arg)
-    return type(arg) == "string" and string.len(arg) == 0
+    return type(arg) ~= "string" or string.len(arg) == 0
 end
 
 local function str_isnonempty(arg)
@@ -400,7 +406,7 @@ local function str_trunc(str)
                     goto exit
                 elseif u_b1 ~= nil and nextcharoffs == nil -- found invalid utf-8 char
                 then
-                    mp.msg.debug("str_trunc(): found invalid UTF-8 character; falling back to byte-oriented string truncate.")
+                    msg.debug("str_trunc(): found invalid UTF-8 character; falling back to byte-oriented string truncate.")
                 elseif u_b1 ~= nil and nextcharoffs ~= nil -- string needs to be trunc-ed
                 then
                     str_truncpos = str_bytepos - 1
@@ -456,7 +462,7 @@ local function str_split_styleoption(styleopt_str)
 
             if str_isnonempty(styleopt_pass2)
             then
-                mp.msg.debug("str_split_styleoption(): found: " .. styleopt_pass2)
+                msg.debug("str_split_styleoption(): found: " .. styleopt_pass2)
                 res_t[styleopt_pass2] = true
             end
         end
@@ -921,9 +927,9 @@ local function ass_prepare_templates()
             ass_style.osd_2.textarea_1,
             ass_tmpl_strid_textarea_1_str)
 
-    mp.msg.debug(
+    msg.debug(
         "ass_prepare_templates(): osd_1 template: " .. ass_tmpl_osd_1)
-    mp.msg.debug(
+    msg.debug(
         "ass_prepare_templates(): osd_2 template: " .. ass_tmpl_osd_2)
 end
 
@@ -953,7 +959,7 @@ local function osd_has_data(osd_overlay)
 end
 
 local function show_osd_1()
-    mp.msg.debug("show_osd_1()")
+    msg.debug("show_osd_1()")
 
     if osd_enabled then
         if osd_has_data(osd_overlay_osd_1) then
@@ -971,7 +977,7 @@ local function show_osd_1()
 end
 
 local function show_osd_2()
-    mp.msg.debug("show_osd_2()")
+    msg.debug("show_osd_2()")
 
     if osd_enabled then
         if osd_has_data(osd_overlay_osd_2) then
@@ -989,7 +995,7 @@ local function show_osd_2()
 end
 
 local function hide_osd()
-    mp.msg.debug("hide_osd()")
+    msg.debug("hide_osd()")
 
     if osd_enabled then
         osd_overlay_osd_1:remove()
@@ -1004,7 +1010,7 @@ local function hide_osd()
 end
 
 local function toggle_osd_1()
-    mp.msg.debug("toggle_osd_1()")
+    msg.debug("toggle_osd_1()")
 
     if osd_enabled then
         if curr_state == state.SHOWING_OSD_1 then
@@ -1016,7 +1022,7 @@ local function toggle_osd_1()
 end
 
 local function toggle_osd_2()
-    mp.msg.debug("toggle_osd_2()")
+    msg.debug("toggle_osd_2()")
 
     if osd_enabled then
         if curr_state == state.SHOWING_OSD_2 then
@@ -1081,7 +1087,7 @@ end
 local reeval_osd_enabled -- forward declaration
 
 local function reset_usertoggled()
-    mp.msg.debug("reset_usertoggled()")
+    msg.debug("reset_usertoggled()")
     osd_enabled_usertoggled = false
     osd_autohide_usertoggled = false
     reeval_osd_enabled()
@@ -1089,218 +1095,296 @@ local function reset_usertoggled()
     show_statusosd()
 end
 
-local function on_metadata_change(propertyname, propertyvalue)
-    if type(propertyname.event) == "string" then
-        propertyname = propertyname.event
-    elseif type(propertyname) ~= "string" then
-        propertyname = ""
-    end
-    mp.msg.debug("on_metadata_change(): " .. propertyname)
+local function on_metadata_change(metadata_key, metadata_val)
+    msg.debug("on_metadata_change(): " ..
+        tostring(metadata_key) ..
+        ": " ..
+        utils.to_string(metadata_val))
+
+    --[[
+    The incoming table with metadata can have all the possible letter
+    capitalizations for table keys which are case sensitive in Lua ->
+    properties are always querried via mp.get_property().
+    ]]
 
     local prop_path           = mp.get_property_osd("path")
+    local prop_elongatedpath  = mp.get_property_osd("working-directory") ..
+        "/" ..
+        prop_path
     local prop_streamfilename = mp.get_property_osd("stream-open-filename")
     local prop_fileformat     = mp.get_property_osd("file-format")
     local prop_mediatitle     = mp.get_property_osd("media-title")
-
-    local prop_meta_album     = mp.get_property("metadata/by-key/Album")
-    local prop_meta_title     = mp.get_property("metadata/by-key/Title")
+    local prop_meta_track     = mp.get_property_osd("metadata/by-key/track")
+    local prop_meta_title     = mp.get_property_osd("metadata/by-key/title")
 
     local prop_playlist_curr  = mp.get_property("playlist-pos-1")
     local prop_playlist_total = mp.get_property("playlist-count")
+    prop_playlist_curr        = tonumber(prop_playlist_curr)
+    prop_playlist_total       = tonumber(prop_playlist_total)
+
     local prop_chapter_curr   = mp.get_property("chapter")
     local prop_chapters_total = mp.get_property("chapters")
-    local prop_chaptertitle   = mp.get_property("chapter-list/" .. tostring(prop_chapter_curr) .. "/title")
+    prop_chapter_curr         = tonumber(prop_chapter_curr)
+    prop_chapters_total       = tonumber(prop_chapters_total)
 
     local playing_file =
         (prop_fileformat ~= "hls") and -- not 'http live streaming'
         (prop_path == prop_streamfilename) -- not processed by yt-dlp/youtube-dl
 
-    -- OSD-1
     local osd_str = ass_tmpl_osd_1
+    local textarea_1_str = nil
+    local textarea_2_str = nil
+    local textarea_2_reldate_str = nil
+    local textarea_3_str = nil
+    local textarea_4_str = nil
 
+    -- OSD-1
     -- ┌─────────────────┐
     -- │ TEXT AREA 1     │
     -- └─────────────────┘
-    local textarea_1_str = ""
-
-    if playing_file then
+    if playing_file
+    then
         -- meta: Artist
-        local prop_meta_artist = mp.get_property("metadata/by-key/artist")
+        textarea_1_str = mp.get_property_osd("metadata/by-key/artist")
 
-        if str_isempty(prop_meta_artist) then
-            prop_meta_artist = mp.get_property("metadata/by-key/album_artist")
-        end
+        if str_isempty(textarea_1_str)
+        then
+            textarea_1_str = mp.get_property_osd("metadata/by-key/album_artist")
 
-        if str_isempty(prop_meta_artist) then
-            prop_meta_artist = mp.get_property("metadata/by-key/composer")
-        end
+            if str_isempty(textarea_1_str)
+            then
+                textarea_1_str = mp.get_property_osd("metadata/by-key/composer")
 
-        if str_isnonempty(prop_meta_artist) then
-            textarea_1_str = prop_meta_artist
+                -- Foldername-Artist fallback
+                if str_isempty(textarea_1_str)
+                then
+                    local folder_upup_pattern = ".*/(.*)/.*/.*"
 
-        -- Foldername-artist fallback
-        else
-            local folder_upup_pattern = ".*/(.*)/(.*)/.*"
-
-            if prop_path:match(folder_upup_pattern) then
-                foldername_artist = prop_path:gsub(folder_upup_pattern, "%1")
-                foldername_artist = foldername_artist:gsub("_", " ")
-                textarea_1_str = foldername_artist
+                    if prop_elongatedpath:match(folder_upup_pattern)
+                    then
+                        textarea_1_str =
+                            prop_elongatedpath:gsub(folder_upup_pattern, "%1")
+                        textarea_1_str =
+                            textarea_1_str:gsub("_", " ")
+                    end
+                end
             end
         end
+
     else -- playing from remote source
         -- meta: Uploader
-        local prop_uploader = mp.get_property_osd("metadata/by-key/Uploader")
-
-        if str_isnonempty(prop_uploader) then
-            textarea_1_str = prop_uploader
-        end
+        textarea_1_str = mp.get_property_osd("metadata/by-key/uploader")
     end
 
     osd_str = string.gsub(
         osd_str,
         ass_tmpl_strid_textarea_1_str,
-        str_trunc(textarea_1_str),
+        str_isnonempty(textarea_1_str) and
+            str_trunc(textarea_1_str) or "",
         1)
 
     -- ┌─────────────────┐
     -- │ TEXT AREA 2     │
     -- └─────────────────┘
-    local textarea_2_str = ""
-    local textarea_2_reldate_str = ""
-
-    if playing_file then
-        -- For files with internal chapters ...
-        -- meta: Title (album name usually)
-        if prop_chapter_curr and prop_chapters_total and str_isnonempty(prop_meta_title) then
-            textarea_2_str = prop_meta_title
-
-            -- meta: Track (release year _usually_)
-            local prop_meta_track = mp.get_property("metadata/by-key/Track")
-            prop_meta_track = str_capture4digits(prop_meta_track)
-
-            if str_isnonempty(prop_meta_track) then
-                textarea_2_reldate_str = " (" .. prop_meta_track .. ")"
-            end
-
+    if playing_file
+    then
         -- meta: Album
-        elseif str_isnonempty(prop_meta_album) then
-            textarea_2_str = prop_meta_album
+        textarea_2_str = mp.get_property_osd("metadata/by-key/album")
 
-            -- meta: Album release date
-            local prop_meta_reldate   = mp.get_property("metadata/by-key/Date")
-            prop_meta_reldate = str_capture4digits(prop_meta_reldate)
+        -- meta: Album release date
+        local prop_meta_reldate = mp.get_property_osd("metadata/by-key/date")
+        prop_meta_reldate = str_capture4digits(prop_meta_reldate)
 
-            if str_isnonempty(prop_meta_reldate) then
-                textarea_2_reldate_str = " (" .. prop_meta_reldate .. ")"
+        if str_isnonempty(prop_meta_reldate)
+        then
+            textarea_2_reldate_str = " (" .. prop_meta_reldate .. ")"
+        end
+
+        -- For audio files with internal chapters ...
+        if prop_chapter_curr and
+            prop_chapters_total and
+            ( curr_mediatype == mediatype.AUDIO or
+            curr_mediatype == mediatype.AUDIO_ALBUMART )
+        then
+            if str_isempty(textarea_2_str)
+            then
+                -- meta: Title
+                --   contains _often_ album name, use it in a pinch.
+                --   sometimes, this contains better data than 'album' property,
+                --   but how would we know (switch it on a mouse click?)
+                textarea_2_str = prop_meta_title
             end
 
-        -- Foldername-album fallback
-        else
-            local folder_up_pattern = ".*/(.*)/.*"
+            if str_isempty(textarea_2_reldate_str)
+            then
+                -- meta: Track
+                --   contains _often_ release date, use it in a pinch.
+                prop_meta_track = str_capture4digits(prop_meta_track)
 
-            if prop_path:match(folder_up_pattern) then
-                foldername_album = prop_path:gsub(folder_up_pattern, "%1")
-                foldername_album = foldername_album:gsub("_", " ")
-                textarea_2_str = foldername_album
+                if str_isnonempty(prop_meta_track)
+                then
+                    textarea_2_reldate_str = " (" .. prop_meta_track .. ")"
+                end
             end
         end
+
+        -- Foldername-Album fallback
+        if str_isempty(textarea_2_str)
+        then
+            local folder_up_pattern = ".*/(.*)/.*"
+
+            if prop_elongatedpath:match(folder_up_pattern)
+            then
+                textarea_2_str =
+                    prop_elongatedpath:gsub(folder_up_pattern, "%1")
+                textarea_2_str =
+                    textarea_2_str:gsub("_", " ")
+            end
+        end
+
     else -- playing from remote source
-        -- <Text area empty in this release>
+        -- could be filled with something useful in the future.
     end
 
     osd_str = string.gsub(
         osd_str,
         ass_tmpl_strid_textarea_2_str,
-        str_trunc(textarea_2_str),
+        str_isnonempty(textarea_2_str) and
+            str_trunc(textarea_2_str) or "",
         1)
 
     osd_str = string.gsub(
         osd_str,
         ass_tmpl_strid_textarea_2_reldate_str,
-        str_trunc(textarea_2_reldate_str),
+        str_isnonempty(textarea_2_reldate_str) and
+            str_trunc(textarea_2_reldate_str) or "",
         1)
 
     -- ┌─────────────────┐
     -- │ TEXT AREA 3     │
     -- └─────────────────┘
-    local textarea_3_str = ""
-
-    if playing_file then
-        -- For files with internal chapters ...
-        -- meta: Chapter title
-        if curr_mediatype ~= mediatype.VIDEO and prop_chapter_curr and prop_chapters_total and str_isnonempty(prop_chaptertitle) then
-            textarea_3_str = prop_chaptertitle
+    if playing_file
+    then
+        -- For audio files with internal chapters ...
+        if prop_chapter_curr and
+            prop_chapters_total and
+            ( curr_mediatype == mediatype.AUDIO or
+            curr_mediatype == mediatype.AUDIO_ALBUMART )
+        then
+            -- meta: Chapter Title
+            --   contains _usually_ song name
+            textarea_3_str =
+                mp.get_property("chapter-list/" .. tostring(prop_chapter_curr) .. "/title")
 
         -- meta: Title
-        elseif str_isnonempty(prop_meta_title) then
+        else
+            -- meta: Title
             textarea_3_str = prop_meta_title
+        end
 
         -- Filename fallback
-        else
-            filename_noext = mp.get_property_osd("filename/no-ext")
-            assumed_title = filename_noext:gsub("_", " ")
-            textarea_3_str = assumed_title
+        if str_isempty(textarea_3_str)
+        then
+            textarea_3_str = mp.get_property_osd("filename/no-ext")
+            textarea_3_str = textarea_3_str:gsub("_", " ")
         end
+
     else -- playing from remote source
         -- meta: Media Title
-        if str_isnonempty(prop_mediatitle) then
-            textarea_3_str = prop_mediatitle
-        end
+        textarea_3_str = prop_mediatitle
     end
 
     osd_str = string.gsub(
         osd_str,
         ass_tmpl_strid_textarea_3_str,
-        str_trunc(textarea_3_str),
+        str_isnonempty(textarea_3_str) and
+            str_trunc(textarea_3_str) or "",
         1)
 
     -- ┌─────────────────┐
     -- │ TEXT AREA 4     │
     -- └─────────────────┘
-    local textarea_4_str = ""
-
-    -- For files with chapters...
-    -- meta: Chapter current / chapters total
-    if str_isnonempty(prop_chapter_curr) and str_isnonempty(prop_chapters_total) then
-        textarea_4_str =
-            tostring(prop_chapter_curr + 1) ..
-            "/" ..
-            tostring(prop_chapters_total)
-
-    -- meta: Playlist position
-    elseif str_isnonempty(prop_playlist_curr) and str_isnonempty(prop_playlist_total) then
+    -- meta: (Big) Playlist position
+    if prop_playlist_curr and
+        prop_playlist_total
+    then
         textarea_4_str =
             tostring(prop_playlist_curr) ..
             "/" ..
             tostring(prop_playlist_total)
 
-        local prop_meta_track = mp.get_property("metadata/by-key/Track")
-
-        if options.show_albumtrack_number
+        -- For files with internal chapters ...
+        -- meta: Chapter Number
+        if prop_chapter_curr and
+            prop_chapters_total
         then
-            if str_isnonempty(prop_meta_track)
+            if options.show_current_chapter_number
             then
-                local i, j = string.find(prop_meta_track, '[%d]+')
-                if i and j
+                local chapternum_str = ""
+
+                if curr_mediatype == mediatype.VIDEO
                 then
-                    local prop_meta_track_digits = string.sub(prop_meta_track, i, j)
-                    if str_isnonempty (prop_meta_track_digits)
+                    chapternum_str = "Chapter: "
+                end
+
+                chapternum_str =
+                    chapternum_str ..
+                    tostring(prop_chapter_curr + 1) ..
+                    "/" ..
+                    tostring(prop_chapters_total)
+
+                if prop_playlist_total ~= 1 and
+                    ( prop_chapter_curr ~= prop_playlist_curr or
+                    prop_chapters_total ~= prop_playlist_total )
+                then
+                    chapternum_str =
+                        chapternum_str ..
+                        ass_newline() ..
+                        "[" ..
+                        textarea_4_str ..
+                        "]"
+                end
+
+                textarea_4_str = chapternum_str
+            end
+
+        -- meta: Track Number
+        elseif ( options.show_current_albumtrack_number or
+            options.show_albumtrack_number ) and
+            ( curr_mediatype == mediatype.AUDIO or
+            curr_mediatype == mediatype.AUDIO_ALBUMART ) and
+            str_isnonempty(prop_meta_track)
+        then
+            local _, _, s_match = string.find(prop_meta_track, '^([%d]+)')
+            if s_match
+            then
+                local tracknum = tonumber(s_match)
+                if tracknum and
+                    tracknum < 999 -- track number can contain release year,
+                                    -- skip more-than-three-digit track numbers
+                then
+                    local tracknum_str = ""
+
+                    if prop_playlist_total == 1
                     then
-                        prop_playlist_curr_n = tonumber(prop_playlist_curr)
-                        prop_playlist_total_n = tonumber(prop_playlist_total)
-                        prop_meta_track_n = tonumber(prop_meta_track_digits)
-                        if prop_playlist_curr_n and
-                            prop_playlist_total_n and
-                            prop_meta_track_n
-                        then
-                            if prop_playlist_curr_n ~= prop_meta_track_n or
-                                prop_playlist_total_n == 1
-                            then
-                                textarea_4_str = textarea_4_str ..
-                                    "  (Album Track: " .. prop_meta_track .. ")"
-                            end
-                        end
+                        tracknum_str =
+                            "Track: " ..
+                            tracknum
+
+                    elseif tracknum ~= prop_playlist_curr
+                    then
+                        tracknum_str =
+                            "Track: " ..
+                            tracknum ..
+                            ass_newline() ..
+                            "[" ..
+                            textarea_4_str ..
+                            "]"
+                    end
+
+                    if str_isnonempty(tracknum_str)
+                    then
+                        textarea_4_str = tracknum_str
                     end
                 end
             end
@@ -1310,7 +1394,8 @@ local function on_metadata_change(propertyname, propertyvalue)
     osd_str = string.gsub(
         osd_str,
         ass_tmpl_strid_textarea_4_str,
-        str_trunc(textarea_4_str),
+        str_isnonempty(textarea_4_str) and
+            str_trunc(textarea_4_str) or "",
         1)
 
     osd_overlay_osd_1.data = osd_str
@@ -1320,16 +1405,16 @@ local function on_metadata_change(propertyname, propertyvalue)
     -- │ TEXT AREA 1     │
     -- └─────────────────┘
     -- meta: Chapter Title
-    if options.enable_osd_2 and str_isnonempty(propertyname) and propertyname == "chapter-metadata/title" and str_isnonempty(propertyvalue) then
+    if options.enable_osd_2 and metadata_key == "chapter-metadata/title" and str_isnonempty(metadata_val) then
         osd_overlay_osd_2.data =
             string.gsub(
                 ass_tmpl_osd_2,
                 ass_tmpl_strid_textarea_1_str,
-                str_trunc(propertyvalue),
+                str_trunc(metadata_val),
                 1)
     end
 
-    if str_isnonempty(propertyname) and propertyname == "chapter-metadata/title" and (curr_state == state.SHOWING_OSD_2 or (osd_autohide and curr_state == state.OSD_HIDDEN)) then
+    if metadata_key == "chapter-metadata/title" and (curr_state == state.SHOWING_OSD_2 or (osd_autohide and curr_state == state.OSD_HIDDEN)) then
         show_osd_2()
     else
         show_osd_1()
@@ -1337,7 +1422,7 @@ local function on_metadata_change(propertyname, propertyvalue)
 end
 
 local function master_osd_enable()
-    mp.msg.debug("master_osd_enable()")
+    msg.debug("master_osd_enable()")
 
     mp.add_key_binding(
         options.key_toggleosd_1,
@@ -1361,7 +1446,7 @@ local function master_osd_enable()
 
     mp.observe_property(
         "metadata",
-        "string",
+        "native",
         on_metadata_change)
 
     mp.observe_property(
@@ -1374,7 +1459,7 @@ local function master_osd_enable()
 end
 
 local function master_osd_disable()
-    mp.msg.debug("master_osd_disable()")
+    msg.debug("master_osd_disable()")
 
     mp.remove_key_binding(
         "toggle_osd_autohide")
@@ -1429,12 +1514,12 @@ reeval_osd_enabled = function()
 end
 
 local function on_tracklist_change(name, tracklist)
-    mp.msg.debug("on_tracklist_change()")
+    msg.debug("on_tracklist_change()")
 
     curr_mediatype = mediatype.UNKNOWN
 
     if tracklist then
-        mp.msg.debug("on_tracklist_change(): num of tracks: " .. tostring(#tracklist))
+        msg.debug("on_tracklist_change(): num of tracks: " .. tostring(#tracklist))
 
         for _, track in ipairs(tracklist) do
             if not track.selected then
@@ -1442,16 +1527,16 @@ local function on_tracklist_change(name, tracklist)
             end
 
             if track.type == "audio" and curr_mediatype == mediatype.UNKNOWN then
-                mp.msg.debug("on_tracklist_change(): audio track selected")
+                msg.debug("on_tracklist_change(): audio track selected")
                 curr_mediatype = mediatype.AUDIO
             elseif track.type == "video" then
-                mp.msg.debug("on_tracklist_change(): video track selected")
+                msg.debug("on_tracklist_change(): video track selected")
                 curr_mediatype = mediatype.VIDEO
                 if track.image then
-                    mp.msg.debug("on_tracklist_change(): video track is image")
+                    msg.debug("on_tracklist_change(): video track is image")
                     curr_mediatype = mediatype.IMAGE
                     if track.albumart then
-                        mp.msg.debug("on_tracklist_change(): video track is albumart.")
+                        msg.debug("on_tracklist_change(): video track is albumart.")
                         curr_mediatype = mediatype.AUDIO_ALBUMART
                     end
                 end
@@ -1461,7 +1546,7 @@ local function on_tracklist_change(name, tracklist)
         end
     end
 
-    mp.msg.debug("on_tracklist_change(): current media type: " .. curr_mediatype)
+    msg.debug("on_tracklist_change(): current media type: " .. curr_mediatype)
 
     reeval_osd_enabled()
     reeval_osd_autohide()
