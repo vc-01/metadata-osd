@@ -211,9 +211,21 @@ local unicode_ellipsis = "\u{2026}"
 local function utf8_nextcharoffs(u_b1, u_b2, u_b3, u_b4)
     local nextcharoffs = nil
 
-    -- UTF-8 Byte Sequences: Unicode Version 15.0.0, Section 3.9, Table 3-7
-    -- The Unicode Consortium. The Unicode Standard, Version 15.0.0, (Mountain View, CA: The Unicode Consortium, 2022. ISBN 978-1-936213-32-0)
-    -- https://www.unicode.org/versions/Unicode15.0.0/
+    --[[
+    The built-in Lua5.1 byte-oriented string functions are limited,
+    for variable length encoded characters present in the UTF-8
+    encoding standard, insufficient.
+
+    Until LuaJIT has compile support for Lua5.3, coming with its own
+    native UTF-8 string library, a custom implementation deems to be
+    necessary.
+    ]]
+
+    --[[
+    UTF-8 Byte Sequences: Unicode Version 15.0.0, Section 3.9, Table 3-7.
+    The Unicode Consortium. The Unicode Standard, Version 15.0.0, (Mountain View, CA: The Unicode Consortium, 2022. ISBN 978-1-936213-32-0)
+    https://www.unicode.org/versions/Unicode15.0.0/
+    ]]
 
     -- U+0000..U+007F
     if type(u_b1) == "number"
@@ -1580,7 +1592,7 @@ osd_timer = mp.add_timeout( -- create & start the timer
         )
 osd_timer:kill() -- stop & reset the timer
 
-local ffi = require("ffi")
 if jit.os == "Linux" then
-    charencode_utf8 = true
+    charencode_utf8 = true  -- UTF-8 is _assumed_,
+                            -- not querried from the system
 end
