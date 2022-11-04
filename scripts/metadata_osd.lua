@@ -58,10 +58,14 @@ local options = {
     -- OSD autohide enable / disable switch key
     key_toggleautohide = 'F5',
 
-    -- Show / hide OSD-1 switch key (current autohide state applies)
+    -- Show / hide OSD-1 switch key
+    --   - current autohide state applies
     key_toggleosd_1 = '',
 
-    -- Show / hide OSD-2 switch key (current autohide state applies)
+    -- Show / hide OSD-2 switch key
+    --   - current autohide state applies
+    --   - OSD-2 needs to be enabled in 'enable_osd_2' config option
+    --   - OSD-2 needs to have data
     key_toggleosd_2 = '',
 
     -- Reset user-toggled switches
@@ -1061,7 +1065,7 @@ local function autohide_resettimer()
     end
 end
 
-local function toggle_osd_autohide()
+local function toggle_autohide()
     osd_autohide_usertoggled = true
     osd_autohide = not osd_autohide
     autohide_resettimer()
@@ -1426,18 +1430,18 @@ local function master_osd_enable()
 
     mp.add_key_binding(
         options.key_toggleosd_1,
-        "toggle_osd_1",
+        "toggleosd_1",
         toggle_osd_1)
 
     mp.add_key_binding(
         options.key_toggleosd_2,
-        "toggle_osd_2",
+        "toggleosd_2",
         toggle_osd_2)
 
     mp.add_key_binding(
         options.key_toggleautohide,
-        "toggle_osd_autohide",
-        toggle_osd_autohide)
+        "toggleautohide",
+        toggle_autohide)
 
     mp.add_key_binding(
         options.key_reset_usertoggled,
@@ -1462,11 +1466,11 @@ local function master_osd_disable()
     msg.debug("master_osd_disable()")
 
     mp.remove_key_binding(
-        "toggle_osd_autohide")
+        "toggleautohide")
     mp.remove_key_binding(
-        "toggle_osd_1")
+        "toggleosd_1")
     mp.remove_key_binding(
-        "toggle_osd_2")
+        "toggleosd_2")
     mp.remove_key_binding(
         "reset_usertoggled")
 
@@ -1477,7 +1481,7 @@ local function master_osd_disable()
     osd_enabled = false
 end
 
-local function toggle_osd_enabled()
+local function toggle_enable()
     osd_enabled_usertoggled = true
 
     if osd_enabled then
@@ -1557,7 +1561,7 @@ ass_prepare_templates()
 mp.add_key_binding(
     options.key_toggleenable,
     "toggleenable",
-    toggle_osd_enabled)
+    toggle_enable)
 
 mp.add_key_binding(
     options.key_showstatusosd,

@@ -1,5 +1,6 @@
 Unreleased
 ===============================
+ * Expose & document key binding names for input.conf
  * Improve metadata selection
  * Move OSD further down in the screen area (one line)
  * Disable while viewing pictures by default

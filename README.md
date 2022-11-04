@@ -1,35 +1,51 @@
-# Metadata OSD for mpv player
+# Metadata OSD script for mpv player
 This script adds metadata OSD (on-screen display) to mpv.
 
 ![Screenshot](screenshot.png)
 
 ## Installation & Configuration
-Download & place the [metadata_osd.lua](scripts/metadata_osd.lua?raw=true) script in
+Download & place [metadata_osd.lua](scripts/metadata_osd.lua?raw=true) script into
 
-- `$XDG_CONFIG_HOME/mpv/scripts` (it will be most of the times `~/.config/mpv/scripts`) in Linux, or
-- `%APPDATA%\mpv\scripts` in Windows
+- `$XDG_CONFIG_HOME/mpv/scripts` (it will be most of the times `~/.config/mpv/scripts`) on Linux, or
+- `%APPDATA%\mpv\scripts` on Windows
 
 for autoload.
 
-(_Optional_) Config file with user settings named `metadata_osd.conf` can be put in
+(_Optional_) Config file with user settings named `metadata_osd.conf` can be created in
 
-- `$XDG_CONFIG_HOME/mpv/script-opts` in Linux, or
-- `%APP‐DATA%\mpv\script-opts` in Windows
+- `$XDG_CONFIG_HOME/mpv/script-opts` on Linux, or
+- `%APP‐DATA%\mpv\script-opts` on Windows
 
-See the example config file [metadata_osd.conf](script-opts/metadata_osd.conf?raw=true) in this repo.
+See the example configuration file [metadata_osd.conf](script-opts/metadata_osd.conf?raw=true) in this repo for available user config options.
 
-Configuration options (and their defaults in parenthesis) picked to mention are the following:
+## Key Bindings
 
-* _enable_on_start_ (yes) - enable OSD on mpv start
-* _enable_osd_2_ (yes) - enable / disable OSD-2 altogether
-* _key_toggleenable_ (F1) - master enable / disable switch key (killswitch)
-* _key_toggleautohide_ (F5) - switch key to enable / disable the autohide feature
-* _key_toggleosd_1_ (_unassigned_) - key to show / hide OSD-1 (current autohide state applies)
-* _key_toggleosd_2_ (_unassigned_) - key to show / hide OSD-2 (current autohide state applies & OSD-2 needs to be enabled in settings & needs to have data)
-* _autohide_timeout_sec_ (5) - OSD autohide delay in seconds
+The following table summarizes the script's default key bindings and their config options:
+
+| Key | Action | Config Option Name | Binding Name (for input.conf) |
+| ----: | :--- | :--- | :--- |
+| <kbd>F1</kbd> | Master enable / disable (killswitch) | key_toggleenable | toggleenable |
+| <kbd>F5</kbd> | Enable / disable the autohide feature | key_toggleautohide | toggleautohide |
+| _unassigned_ | Show / hide OSD-1 | key_toggleosd_1 | toggleosd_1 |
+| _unassigned_ | Show / hide OSD-2 | key_toggleosd_2 | toggleosd_2 |
+| <kbd>F6</kbd> | Reset user-toggled switches | key_reset_usertoggled | reset_usertoggled |
+| _unassigned_ | Show status OSD | key_showstatusosd | showstatusosd |
+
+Key bindings can be configured either via script's config file, see [metadata_osd.conf](script-opts/metadata_osd.conf?raw=true) example with pre-filled defaults, or via _input.conf_.
+
+Default bindings in _input.conf_ format are listed below again for clarity:
+
+```
+F1 script-binding metadata_osd/toggleenable
+F5 script-binding metadata_osd/toggleautohide
+#<unassigned> script-binding metadata_osd/toggleosd_1
+#<unassigned> script-binding metadata_osd/toggleosd_2
+F6 script-binding metadata_osd/reset_usertoggled
+#<unassigned> script-binding metadata_osd/showstatusosd
+```
 
 ## Per media-type enable / autohide
-OSD enabled state or auto-hiding after a delay can be triggered either manually by pressing the relevant key (see _key_toggleenable_ and _key_toggleautohide_ above) or determined algorithmically based on the currently playing media type and its related config options settings.
+OSD enabled state or auto-hiding after a delay can be triggered either manually by pressing the relevant key (see _key_toggleenable_ and _key_toggleautohide_ [above](#key-bindings)) or determined algorithmically based on the currently playing media type and its related config options settings.
 
 OSD is enabled by default for audio and video media, disabled while viewing pictures. Autohide feature is enabled for video, autohide is disabled (that is, the OSD will stay visible) while playing music, as well as for music files with cover art image.
 
@@ -42,7 +58,7 @@ Config options for per media-type OSD enable and autohide are cumulatively:
 
 If user presses a button to toggle enable / disable the OSD or the autohide feature, it will override the automatic determining until reset back by presssing a key specified by:
 
-* _key_reset_usertoggled_ (F6)
+* _key_reset_usertoggled_ / _reset_usertoggled_ (F6) (see [above](#key-bindings))
 
 ## Program design
 Below is the program design documentation (not necessary to read for program use).
