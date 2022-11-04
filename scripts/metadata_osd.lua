@@ -175,9 +175,9 @@ local options = {
     style_fsp_osd_2_textarea_1 = 0,
 }
 
-opt.read_options(options, "metadata-osd") -- underscore character blends in better,
-                                      -- keeping this for backward compat.,
-                                      -- * will be removed *
+opt.read_options(options, "metadata-osd")   -- underscore character blends in better,
+                                            -- keeping this for backward compat.;
+                                            -- * will be removed *
 opt.read_options(options)
 
 local state = {
@@ -204,7 +204,9 @@ local osd_overlay_osd_1 = mp.create_osd_overlay("ass-events")
 local osd_overlay_osd_2 = mp.create_osd_overlay("ass-events")
 local osd_timer -- forward declaration
 local charencode_utf8 = false
-local unicode_ellipsis = "\u{2026}"
+local ellipsis_str = "..."  -- could have been "\u{2026}" but unicode escaping doesn't
+                            -- work on all platforms, as e.g. Debian Testing;
+                            -- once supported, will be replaced.
 
 -- String helper functions
 
@@ -433,7 +435,7 @@ local function str_trunc(str)
             then
                 result =
                     string.sub(str, 1, str_truncpos) ..
-                    unicode_ellipsis
+                    ellipsis_str
             end
         end
     end
