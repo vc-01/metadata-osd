@@ -1598,7 +1598,7 @@ osd_timer = mp.add_timeout( -- create & start the timer
         )
 osd_timer:kill() -- stop & reset the timer
 
-if jit.os == "Linux" then
+if jit and jit.os == "Linux" then
     charencode_utf8 = true  -- UTF-8 is _assumed_,
                             -- not querried from the system
 end
