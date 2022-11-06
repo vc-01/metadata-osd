@@ -1,9 +1,13 @@
 # Metadata OSD script for mpv player
+
 This script adds metadata OSD (on-screen display) to mpv.
 
-![Screenshot](screenshot.png)
+![Screenshot](sshots/sshot_osd_1.png)
+
+<sub>* Screenshot taken on Arch Linux, font may vary on different OS distributions.</sub>
 
 ## Installation & Configuration
+
 Download & place [metadata_osd.lua](scripts/metadata_osd.lua?raw=true) script into
 
 - `$XDG_CONFIG_HOME/mpv/scripts` (it will be most of the times `~/.config/mpv/scripts`) on Linux, or
@@ -22,14 +26,14 @@ See the example configuration file [metadata_osd.conf](script-opts/metadata_osd.
 
 The following table summarizes the script's default key bindings and their config options:
 
-| Key | Action | Config Option Name | Binding Name (for input.conf) |
-| ----: | :--- | :--- | :--- |
-| <kbd>F1</kbd> | Master enable / disable (killswitch) | key_toggleenable | toggleenable |
-| <kbd>F5</kbd> | Enable / disable the autohide feature | key_toggleautohide | toggleautohide |
-| _unassigned_ | Show / hide OSD-1 | key_toggleosd_1 | toggleosd_1 |
-| _unassigned_ | Show / hide OSD-2 | key_toggleosd_2 | toggleosd_2 |
-| <kbd>F6</kbd> | Reset user-toggled switches | key_reset_usertoggled | reset_usertoggled |
-| _unassigned_ | Show status OSD | key_showstatusosd | showstatusosd |
+| Key           | Action                                | Config Option Name    | Binding Name (for input.conf) |
+| -------------:|:------------------------------------- |:--------------------- |:----------------------------- |
+| <kbd>F1</kbd> | Master enable / disable (killswitch)  | key_toggleenable      | toggleenable                  |
+| <kbd>F5</kbd> | Enable / disable the autohide feature | key_toggleautohide    | toggleautohide                |
+| _unassigned_  | Show / hide OSD-1                     | key_toggleosd_1       | toggleosd_1                   |
+| _unassigned_  | Show / hide OSD-2                     | key_toggleosd_2       | toggleosd_2                   |
+| <kbd>F6</kbd> | Reset user-toggled switches           | key_reset_usertoggled | reset_usertoggled             |
+| _unassigned_  | Show status OSD                       | key_showstatusosd     | showstatusosd                 |
 
 Key bindings can be configured either via script's config file, see [metadata_osd.conf](script-opts/metadata_osd.conf?raw=true) example with pre-filled defaults, or via _input.conf_.
 
@@ -45,6 +49,7 @@ F6 script-binding metadata_osd/reset_usertoggled
 ```
 
 ## Per media-type enable / autohide
+
 OSD enabled state or auto-hiding after a delay can be triggered either manually by pressing the relevant key (see _key_toggleenable_ and _key_toggleautohide_ [above](#key-bindings)) or determined algorithmically based on the currently playing media type and its related config options settings.
 
 OSD is enabled by default for audio and video media, disabled while viewing pictures. Autohide feature is enabled for video, autohide is disabled (that is, the OSD will stay visible) while playing music, as well as for music files with cover art image.
@@ -60,26 +65,53 @@ If user presses a button to toggle enable / disable the OSD or the autohide feat
 
 * _key_reset_usertoggled_ / _reset_usertoggled_ (F6) (see [above](#key-bindings))
 
+## Chapter number and track number
+
+Current chapter number (disabled by default) can be enabled in OSD via config option:
+
+`show_chapternumber=yes`
+
+See example screenshot below:
+
+![Chapter Number](sshots/sshot_chapternumber.png)
+
+Current album track number (disabled by default) can be enabled in OSD via config option:
+
+`show_albumtracknumber=yes`
+
+See example screenshot below:
+
+![Album Track Number](sshots/sshot_albumtracknumber.png)
+
+_Note_: Track number metadata is not always filled in, this can give mixed results.
+
+The playlist position for this setting is moved one line down and put between square brackets.
+
+For both options, if the chapter / track number is equal to the playlist position, they're conflated. If playlist items tally to 1, playlist position is omitted (only for this particular setting).
+
 ## Program design
+
 Below is the program design documentation (not necessary to read for program use).
 
 ### Metadata selection
-- If the currently playing file is not a video file and has internal **chapters**, these are preferred and shown on the OSD, otherwise file metadata is selected and shown.
 
-	- _Rationale_: Implemented to support music files accompanied with a .cue file where each album track is technically a chapter.
+- If the currently playing file is not a video file and has internal **chapters**, these are preferred and shown on the OSD, otherwise file metadata is selected and shown.
+  
+  - _Rationale_: Implemented to support music files accompanied with a .cue file where each album track is technically a chapter.
 
 - If autohide is enabled and chapter metadata is available, a second OSD (OSD-2) will show up after OSD-1 had been auto-hidden. In the event of a chapter change during playback, only the second OSD (OSD-2) with chapter title will show up.
-
-	- _Rationale_: Chapter metadata for video files could have been integrated into OSD-1, but displaying the whole dataset repeatedly is disturbing.
+  
+  - _Rationale_: Chapter metadata for video files could have been integrated into OSD-1, but displaying the whole dataset repeatedly is disturbing.
 
 - Directory / file name fallback for files with no metadata.
-
-	- _Rationale_: File name and directory name often carry similar information as the per file-format specific metadata. This approach works for media collections organized as e.g.:
-		- `<Artist>/<Album>/<Song>` or
-		- `<Multimedia_dir>/<Artist - Album>/<Song>`
-	- This can be a topic of further changes.
+  
+  - _Rationale_: File name and directory name often carry similar information as the per file-format specific metadata. This approach works for media collections organized as e.g.:
+    - `<Artist>/<Album>/<Song>` or
+    - `<Multimedia_dir>/<Artist - Album>/<Song>`
+  - This can be a topic of further changes.
 
 ### Partial Functional UML Diagrams
+
 ![State Machine Diagram](StateMachineDiagram.svg)
 
 ![Activity Diagram](ActivityDiagram.svg)

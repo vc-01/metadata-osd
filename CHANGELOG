@@ -1,5 +1,8 @@
 Unreleased
 ===============================
+ * Document config options
+     - show_chapternumber
+     - show_albumtracknumber
  * Expose & document key binding names for input.conf
  * Improve metadata selection
  * Move OSD further down in the screen area (one line)

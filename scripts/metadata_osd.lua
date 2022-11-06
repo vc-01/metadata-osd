@@ -77,13 +77,15 @@ local options = {
     -- Show current chapter number in addition to the current playlist position.
     -- Can be useful also for audio files with internal chapters having a song
     -- per chapter.
-    show_current_chapter_number = false,
+    show_chapternumber = false,
+    show_current_chapter_number = false, -- old option name, * will be removed *
 
     -- Show album's current track number (if not equal to the current playlist
     -- position); Playlists can be long, traversing multiple directories.
     -- This will show the album's current track number in addition
     -- to the (encompassing) playlist position (if present in metadata).
-    show_current_albumtrack_number = false,
+    show_albumtracknumber = false,
+    show_current_albumtrack_number = false, -- old option name, * will be removed *
     show_albumtrack_number = false, -- old option name, * will be removed *
 
     osd_message_maxlength = 96,
@@ -1336,7 +1338,8 @@ local function on_metadata_change(metadata_key, metadata_val)
         if prop_chapter_curr and
             prop_chapters_total
         then
-            if options.show_current_chapter_number
+            if ( options.show_chapternumber or
+                options.show_current_chapter_number )
             then
                 local chapternum_str = ""
 
@@ -1367,7 +1370,8 @@ local function on_metadata_change(metadata_key, metadata_val)
             end
 
         -- meta: Track Number
-        elseif ( options.show_current_albumtrack_number or
+        elseif ( options.show_albumtracknumber or
+            options.show_current_albumtrack_number or
             options.show_albumtrack_number ) and
             ( curr_mediatype == mediatype.AUDIO or
             curr_mediatype == mediatype.AUDIO_ALBUMART ) and
