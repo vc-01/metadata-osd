@@ -205,7 +205,6 @@ local curr_state = state.OSD_HIDDEN
 local osd_overlay_osd_1 = mp.create_osd_overlay("ass-events")
 local osd_overlay_osd_2 = mp.create_osd_overlay("ass-events")
 local osd_timer -- forward declaration
-local charencode_utf8 = false
 local ellipsis_str = "..."  -- could have been "\u{2026}" but unicode escaping doesn't
                             -- work on all platforms, as e.g. Debian Testing;
                             -- once supported, will be replaced.
@@ -400,45 +399,42 @@ local function str_trunc(str)
         str = string.gsub(str, "[\r\n]", "")
         if str_truncpos > 0
         then
-            if charencode_utf8
-            then
-                local str_bytepos = 1
-                local str_charcount = 0
-                local nextcharoffs = nil
-                local u_b1, u_b2, u_b3, u_b4 = nil, nil, nil, nil
+            local str_bytepos = 1
+            local str_charcount = 0
+            local nextcharoffs = nil
+            local u_b1, u_b2, u_b3, u_b4 = nil, nil, nil, nil
 
-                repeat
-                    u_b1, u_b2, u_b3, u_b4 =
-                        string.byte(str, str_bytepos, str_bytepos + 4)
-                    nextcharoffs =
-                        utf8_nextcharoffs(
-                            u_b1, u_b2, u_b3, u_b4)
-                    if nextcharoffs
-                    then
-                        str_charcount = str_charcount + 1
-                        str_bytepos = str_bytepos + nextcharoffs
-                    end
-                until nextcharoffs == nil or
-                    str_charcount >= options.osd_message_maxlength
-
-                if u_b1 == nil and nextcharoffs == nil -- reached end of string
+            repeat
+                u_b1, u_b2, u_b3, u_b4 =
+                    string.byte(str, str_bytepos, str_bytepos + 4)
+                nextcharoffs =
+                    utf8_nextcharoffs(
+                        u_b1, u_b2, u_b3, u_b4)
+                if nextcharoffs
                 then
-                    goto exit
-                elseif u_b1 ~= nil and nextcharoffs == nil -- found invalid utf-8 char
-                then
-                    msg.debug("str_trunc(): found invalid UTF-8 character; falling back to byte-oriented string truncate.")
-                elseif u_b1 ~= nil and nextcharoffs ~= nil -- string needs to be trunc-ed
-                then
-                    str_truncpos = str_bytepos - 1
+                    str_charcount = str_charcount + 1
+                    str_bytepos = str_bytepos + nextcharoffs
                 end
-            end
+            until nextcharoffs == nil or
+                str_charcount >= options.osd_message_maxlength
 
-            if string.len(str) > str_truncpos
+            if u_b1 == nil and nextcharoffs == nil -- reached end of string
             then
-                result =
-                    string.sub(str, 1, str_truncpos) ..
-                    ellipsis_str
+                goto exit
+            elseif u_b1 ~= nil and nextcharoffs == nil -- found invalid utf-8 char
+            then
+                msg.debug("str_trunc(): found invalid UTF-8 character; falling back to byte-oriented string truncate.")
+            elseif u_b1 ~= nil and nextcharoffs ~= nil -- string needs to be trunc-ed
+            then
+                str_truncpos = str_bytepos - 1
             end
+        end
+
+        if string.len(str) > str_truncpos
+        then
+            result =
+                string.sub(str, 1, str_truncpos) ..
+                ellipsis_str
         end
     end
 
@@ -1597,8 +1593,3 @@ osd_timer = mp.add_timeout( -- create & start the timer
         osd_timeout_handler
         )
 osd_timer:kill() -- stop & reset the timer
-
-if jit and jit.os == "Linux" then
-    charencode_utf8 = true  -- UTF-8 is _assumed_,
-                            -- not querried from the system
-end
