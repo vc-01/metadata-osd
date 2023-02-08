@@ -205,9 +205,20 @@ local curr_state = state.OSD_HIDDEN
 local osd_overlay_osd_1 = mp.create_osd_overlay("ass-events")
 local osd_overlay_osd_2 = mp.create_osd_overlay("ass-events")
 local osd_timer -- forward declaration
-local ellipsis_str = "..."  -- could have been "\u{2026}" but unicode escaping doesn't
-                            -- work on all platforms, as e.g. Debian Testing;
-                            -- once supported, will be replaced.
+-- gsublist is a string (not a list) so it can later become an user option (?)
+local gsublist_sep = "\r" -- "\0" is not working in LuaJIT with gsub()
+local re_pattern_folder_upup = ".*/(.*)/.*/.*"
+local gsublist_text_area_1_fallback =
+        re_pattern_folder_upup .. gsublist_sep .. "%1" .. gsublist_sep
+local re_pattern_folder_up = ".*/(.*)/.*"
+local gsublist_text_area_2_fallback =
+        re_pattern_folder_up .. gsublist_sep .. "%1" .. gsublist_sep
+local gsublist_text_area_3_fallback =
+        "_" .. gsublist_sep .. " " .. gsublist_sep ..
+        "%d+%s+-%s+" .. gsublist_sep .. "" .. gsublist_sep
+local ellipsis_str = "..."  -- unicode notation for ellipsis "\u{2026}" works in
+                            -- LuaJIT and since Lua5.3 which is not broadly
+                            -- available yet.
 
 -- String helper functions
 
@@ -463,28 +474,49 @@ local function bool2enabled_str(arg)
     return result
 end
 
-local function str_split_styleoption(styleopt_str)
-    local styleopt_pass1 = nil
-    local styleopt_pass2 = nil
+local function str_split(s, split_char)
+    local token_pass_1 = nil
+    local token_pass_2 = nil
     local res_t = {}
 
-    if str_isnonempty(styleopt_str)
+    if str_isnonempty(s) and str_isnonempty(split_char) and split_char:len() == 1
     then
-        for styleopt_pass1 in string.gmatch(styleopt_str, '([^;]+)')
+        for token_pass_1 in string.gmatch(s, '([^' .. split_char .. ']+)')
         do
-            styleopt_pass2 =
+            token_pass_2 =
                 string.match(
-                    styleopt_pass1, '^[%s%p]*(.-)[%s%p]*$')
+                    token_pass_1, '^[%s]*(.-)[%s]*$')
 
-            if str_isnonempty(styleopt_pass2)
+            if str_isnonempty(token_pass_2)
             then
-                msg.debug("str_split_styleoption(): found: " .. styleopt_pass2)
-                res_t[styleopt_pass2] = true
+                msg.debug("str_split(): token: \"" .. token_pass_2 .. "\"")
+                res_t[token_pass_2] = true
             end
         end
     end
 
     return res_t
+end
+
+local function str_gsubloop(s, gsublist)
+    msg.debug("str_gsubloop(): input: \"" .. s .. "\"")
+
+    local gsublist_pattrn =
+        "(.-)" .. gsublist_sep .. "(.-)" .. gsublist_sep
+
+    for gsub_pattrn, substr in gsublist:gmatch(gsublist_pattrn)
+    do
+        s = s:gsub(gsub_pattrn, substr)
+        msg.debug(
+            "str_gsubloop(): gsub: \"" ..
+            gsub_pattrn .. "\" --> \"" .. substr .. "\" --> \"" .. s .. "\"")
+    end
+
+    return s
+end
+
+local function str_split_styleoption(styleopt_str)
+    return str_split(styleopt_str, ';')
 end
 
 local function parse_styleoption_int_inrange(styleopt_int, range_min, range_max)
@@ -1124,7 +1156,8 @@ local function on_metadata_change(metadata_key, metadata_val)
     ]]
 
     local prop_path           = mp.get_property_osd("path")
-    local prop_elongatedpath  = mp.get_property_osd("working-directory") ..
+    local prop_elongatedpath  =
+        mp.get_property_osd("working-directory") ..
         "/" ..
         prop_path
     local prop_streamfilename = mp.get_property_osd("stream-open-filename")
@@ -1174,15 +1207,8 @@ local function on_metadata_change(metadata_key, metadata_val)
                 -- Foldername-Artist fallback
                 if str_isempty(textarea_1_str)
                 then
-                    local folder_upup_pattern = ".*/(.*)/.*/.*"
-
-                    if prop_elongatedpath:match(folder_upup_pattern)
-                    then
-                        textarea_1_str =
-                            prop_elongatedpath:gsub(folder_upup_pattern, "%1")
-                        textarea_1_str =
-                            textarea_1_str:gsub("_", " ")
-                    end
+                    textarea_1_str =
+                        str_gsubloop(prop_elongatedpath, gsublist_text_area_1_fallback)
                 end
             end
         end
@@ -1247,15 +1273,8 @@ local function on_metadata_change(metadata_key, metadata_val)
         -- Foldername-Album fallback
         if str_isempty(textarea_2_str)
         then
-            local folder_up_pattern = ".*/(.*)/.*"
-
-            if prop_elongatedpath:match(folder_up_pattern)
-            then
-                textarea_2_str =
-                    prop_elongatedpath:gsub(folder_up_pattern, "%1")
-                textarea_2_str =
-                    textarea_2_str:gsub("_", " ")
-            end
+            textarea_2_str =
+                str_gsubloop(prop_elongatedpath, gsublist_text_area_2_fallback)
         end
 
     else -- playing from remote source
@@ -1301,8 +1320,10 @@ local function on_metadata_change(metadata_key, metadata_val)
         -- Filename fallback
         if str_isempty(textarea_3_str)
         then
-            textarea_3_str = mp.get_property_osd("filename/no-ext")
-            textarea_3_str = textarea_3_str:gsub("_", " ")
+            textarea_3_str =
+                mp.get_property_osd("filename/no-ext")
+            textarea_3_str =
+                str_gsubloop(textarea_3_str, gsublist_text_area_3_fallback)
         end
 
     else -- playing from remote source
