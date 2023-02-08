@@ -1144,10 +1144,10 @@ local function reset_usertoggled()
 end
 
 local function on_metadata_change(metadata_key, metadata_val)
-    msg.debug("on_metadata_change(): " ..
-        tostring(metadata_key) ..
-        ": " ..
-        utils.to_string(metadata_val))
+--     msg.debug("on_metadata_change(): " ..
+--         tostring(metadata_key) ..
+--         ": " ..
+--         utils.to_string(metadata_val))
 
     --[[
     The incoming table with metadata can have all the possible letter
@@ -1556,6 +1556,8 @@ local function on_tracklist_change(name, tracklist)
     msg.debug("on_tracklist_change()")
 
     curr_mediatype = mediatype.UNKNOWN
+    osd_overlay_osd_1.data = nil
+    osd_overlay_osd_2.data = nil
 
     if tracklist then
         msg.debug("on_tracklist_change(): num of tracks: " .. tostring(#tracklist))
