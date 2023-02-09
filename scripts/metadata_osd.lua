@@ -1,7 +1,7 @@
 --[[
-metadata_osd. Version 0.4.1
+metadata_osd. Version 0.5.0
 
-Copyright (c) 2022 Vladimir Chren
+Copyright (c) 2022-2023 Vladimir Chren
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -80,7 +80,6 @@ local options = {
     --   Can be useful also for audio files with internal chapters having a song
     --   per chapter.
     show_chapternumber = false,
-    show_current_chapter_number = false, -- old option name, * will be removed *
 
     -- Show album's current track number (if not equal to current playlist
     -- position)
@@ -88,8 +87,6 @@ local options = {
     --   This will show the album's current track number in addition
     --   to the (encompassing) playlist position (if present in metadata).
     show_albumtracknumber = false,
-    show_current_albumtrack_number = false, -- old option name, * will be removed *
-    show_albumtrack_number = false, -- old option name, * will be removed *
 
     -- Maximum OSD message length
     --    - OSD messages will be trimmed after specified (character) length
@@ -182,9 +179,6 @@ local options = {
     style_fsp_osd_2_textarea_1 = 0,
 }
 
-opt.read_options(options, "metadata-osd")   -- underscore character blends in better,
-                                            -- keeping this for backward compat.;
-                                            -- * will be removed *
 opt.read_options(options)
 
 local state = {

@@ -1,17 +1,23 @@
-Unreleased
+metadata-osd-0.5.0 / 2023-02-10
 ===============================
- * Document config options
+ * BREAKING CHANGES:
+     - user config files named 'metadata-osd.conf' must be
+       renamed to 'metadata_osd.conf' (version 0.1.0 heritage)
+     - config option 'show_current_chapter_number' must be
+       renamed to 'show_chapternumber'
+     - config option 'show_current_albumtrack_number' or
+       'show_albumtrack_number' must be renamed to
+       'show_albumtracknumber'
+ * New user config options
      - show_chapternumber
      - show_albumtracknumber
- * Expose & document key binding names for input.conf
- * Improve metadata selection
- * Disable while viewing pictures by default
- * Match autohide delay for 'status osd' with 'metadata-osd'
- * Use pre-processed templates for OSD messages
- * Remove newline characters from string during truncate
- * Don't show album's track number by default
- * Add styling config options
- * Truncate strings on UTF-8 encoded characters (in Linux)
+ * Exposed key binding names for input.conf
+ * Disabled by default while viewing pictures
+ * Matched autohide delays of 'metadata-osd' and 'status osd'
+ * Removing newline characters in OSD messages
+ * Not showing album's track number by default
+ * New styling config options
+ * OSD message truncate on UTF-8 characters (not bytes)
 
 metadata-osd-0.4.1 / 2022-10-02
 ===============================
