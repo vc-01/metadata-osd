@@ -4,7 +4,7 @@ This script adds metadata OSD (on-screen display) to mpv.
 
 ![Screenshot](sshots/sshot_osd_1.png)
 
-<sub>* Screenshot taken on Arch Linux, font may vary on different OS distributions.</sub>
+<sub>* Screenshot taken with default package settings on Arch Linux; font may vary on different OS distributions.</sub>
 
 ## Installation & Configuration
 
@@ -32,7 +32,7 @@ The following table summarizes the script's default key bindings and their confi
 | <kbd>F5</kbd> | Enable / disable the autohide feature | key_toggleautohide    | toggleautohide                |
 | _unassigned_  | Show / hide OSD-1                     | key_toggleosd_1       | toggleosd_1                   |
 | _unassigned_  | Show / hide OSD-2                     | key_toggleosd_2       | toggleosd_2                   |
-| <kbd>F6</kbd> | Reset user-toggled switches           | key_reset_usertoggled | reset_usertoggled             |
+| <kbd>F6</kbd> | Reset any user-toggled switches       | key_reset_usertoggled | reset_usertoggled             |
 | _unassigned_  | Show status OSD                       | key_showstatusosd     | showstatusosd                 |
 
 Key bindings can be configured either via script's config file, see [metadata_osd.conf](script-opts/metadata_osd.conf?raw=true) example with pre-filled defaults, or via _input.conf_.
@@ -67,31 +67,31 @@ If user presses a button to toggle enable / disable the OSD or the autohide feat
 
 ## Chapter number and track number
 
-Current chapter number (disabled by default) can be enabled in OSD via config option:
+Current chapter number (disabled by default) can be enabled by config option:
 
 `show_chapternumber=yes`
 
-See example screenshot below:
+See example below:
 
 ![Chapter Number](sshots/sshot_chapternumber.png)
 
-Current album track number (disabled by default) can be enabled in OSD via config option:
+Same goes for album track number (disabled by default):
 
 `show_albumtracknumber=yes`
 
-See example screenshot below:
+See example below:
 
 ![Album Track Number](sshots/sshot_albumtracknumber.png)
 
-_Note_: Track number metadata is not always filled in, this can give mixed results.
+_Note_: Track number metadata is not always present, this can give mixed results.
 
-The playlist position for this setting is moved one line down and put between square brackets.
+The playlist position if the setting above is active is moved one line below and put in between square brackets.
 
-For both options, if the chapter / track number is equal to the playlist position, they're conflated. If playlist items tally to 1, playlist position is omitted (only for this particular setting).
+For both options, if the chapter / track number is equal to the current playlist position, they're conflated (so they don't show the same information twice). Only for this particular setting, if total playlist items tally to 1, playlist position is omitted and substituted by chapter / track number.
 
 ## Program design
 
-Below is the program design documentation (not necessary to read for program use).
+Below is the program design documentation (not a necessary read for program use).
 
 ### Metadata selection
 
