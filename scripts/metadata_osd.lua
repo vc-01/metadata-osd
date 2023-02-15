@@ -92,6 +92,51 @@ local options = {
     --    - OSD messages will be trimmed after specified (character) length
     osd_message_maxlength = 96,
 
+    -- Global string substitutions for filename / foldername metadata fallback
+
+    -- For *_pattern_* options, regular expressions apply as documented in Lua
+    -- documentation:
+    --   https://www.lua.org/manual/5.1/manual.html#5.4.1
+    -- Characters after equal sign '=' are not interpreted specially including
+    -- another equal signs or quotes.
+
+    -- For *_repl_* options, value is taken as such as a string replacement.
+    -- Optionally, space character can be entered as '%UNICODE_SP%' to make it
+    -- visible if it's at the end for example.
+
+    -- Text Area 1: Full file path as starting input
+    -- Match & replace with folder up up
+    gsub_text_area_1_fallback_pattern_1 = ".*/(.*)/.*/.*",
+    gsub_text_area_1_fallback_repl_1 = "%1",
+    -- Empty slot
+    gsub_text_area_1_fallback_pattern_2 = "",
+    gsub_text_area_1_fallback_repl_2 = "",
+    -- Empty slot
+    gsub_text_area_1_fallback_pattern_3 = "",
+    gsub_text_area_1_fallback_repl_3 = "",
+
+    -- Text Area 2: Full file path as starting input
+    -- Match & replace with folder up
+    gsub_text_area_2_fallback_pattern_1 = ".*/(.*)/.*",
+    gsub_text_area_2_fallback_repl_1 = "%1",
+    -- Empty slot
+    gsub_text_area_2_fallback_pattern_2 = "",
+    gsub_text_area_2_fallback_repl_2 = "",
+    -- Empty slot
+    gsub_text_area_2_fallback_pattern_3 = "",
+    gsub_text_area_2_fallback_repl_3 = "",
+
+    -- Text Area 3: File name without extension as starting input
+    -- Replace underscores with spaces
+    gsub_text_area_3_fallback_pattern_1 = "_",
+    gsub_text_area_3_fallback_repl_1 = "%UNICODE_SP%",
+    -- Remove leading track number
+    gsub_text_area_3_fallback_pattern_2 = "^%d+%s+-%s+",
+    gsub_text_area_3_fallback_repl_2 = "",
+    -- Empty slot
+    gsub_text_area_3_fallback_pattern_3 = "",
+    gsub_text_area_3_fallback_repl_3 = "",
+
     -- Styling options
 
     -- OSD-1 layout:
@@ -204,17 +249,7 @@ local curr_state = state.OSD_HIDDEN
 local osd_overlay_osd_1 = mp.create_osd_overlay("ass-events")
 local osd_overlay_osd_2 = mp.create_osd_overlay("ass-events")
 local osd_timer -- forward declaration
--- gsublist is a string (not a list) so it can later become an user option (?)
-local gsublist_sep = "\r" -- "\0" is not working in LuaJIT with gsub()
-local re_pattern_folder_upup = ".*/(.*)/.*/.*"
-local gsublist_text_area_1_fallback =
-        re_pattern_folder_upup .. gsublist_sep .. "%1" .. gsublist_sep
-local re_pattern_folder_up = ".*/(.*)/.*"
-local gsublist_text_area_2_fallback =
-        re_pattern_folder_up .. gsublist_sep .. "%1" .. gsublist_sep
-local gsublist_text_area_3_fallback =
-        "_" .. gsublist_sep .. " " .. gsublist_sep ..
-        "%d+%s+-%s+" .. gsublist_sep .. "" .. gsublist_sep
+local gsublist_text_area_fallback = {}
 local ellipsis_str = "..."  -- unicode notation for ellipsis "\u{2026}" works in
                             -- LuaJIT and since Lua5.3 which is not broadly
                             -- available yet.
@@ -497,23 +532,6 @@ local function str_split(s, split_char)
     return res_t
 end
 
-local function str_gsubloop(s, gsublist)
-    msg.debug("str_gsubloop(): input: \"" .. s .. "\"")
-
-    local gsublist_pattrn =
-        "(.-)" .. gsublist_sep .. "(.-)" .. gsublist_sep
-
-    for gsub_pattrn, substr in gsublist:gmatch(gsublist_pattrn)
-    do
-        s = s:gsub(gsub_pattrn, substr)
-        msg.debug(
-            "str_gsubloop(): gsub: \"" ..
-            gsub_pattrn .. "\" --> \"" .. substr .. "\" --> \"" .. s .. "\"")
-    end
-
-    return s
-end
-
 local function str_split_styleoption(styleopt_str)
     return str_split(styleopt_str, ';')
 end
@@ -688,14 +706,16 @@ local function parse_styleoption_fontstyle(styleopt_fontstyle)
 end
 
 local function parse_style_options()
+    local osd_1_textarea_count = 4
     local ass_style = {}
 
     ass_style.osd_1 = {}
-    ass_style.osd_1.textarea_1 = {}
-    ass_style.osd_1.textarea_2 = {}
+    for i = 1, osd_1_textarea_count
+    do
+        ass_style.osd_1["textarea_" .. tostring(i)] = {}
+    end
+
     ass_style.osd_1.textarea_2_reldate = {}
-    ass_style.osd_1.textarea_3 = {}
-    ass_style.osd_1.textarea_4 = {}
     ass_style.osd_2 = {}
     ass_style.osd_2.textarea_1 = {}
 
@@ -718,35 +738,20 @@ local function parse_style_options()
             options.style_bord_osd_2)
 
     -- Style: Font style
-    ass_style.osd_1.textarea_1.fontstyle = {}
-    ass_style.osd_1.textarea_1.fontstyle.is_italic,
-    ass_style.osd_1.textarea_1.fontstyle.is_bold =
-        parse_styleoption_fontstyle(
-            options.style_fontstyle_osd_1_textarea_1)
-
-    ass_style.osd_1.textarea_2.fontstyle = {}
-    ass_style.osd_1.textarea_2.fontstyle.is_italic,
-    ass_style.osd_1.textarea_2.fontstyle.is_bold =
-        parse_styleoption_fontstyle(
-            options.style_fontstyle_osd_1_textarea_2)
+    for i = 1, osd_1_textarea_count
+    do
+        ass_style.osd_1["textarea_" .. tostring(i)].fontstyle = {}
+        ass_style.osd_1["textarea_" .. tostring(i)].fontstyle.is_italic,
+        ass_style.osd_1["textarea_" .. tostring(i)].fontstyle.is_bold =
+            parse_styleoption_fontstyle(
+                options["style_fontstyle_osd_1_textarea_" .. tostring(i)])
+    end
 
     ass_style.osd_1.textarea_2_reldate.fontstyle = {}
     ass_style.osd_1.textarea_2_reldate.fontstyle.is_italic,
     ass_style.osd_1.textarea_2_reldate.fontstyle.is_bold =
         parse_styleoption_fontstyle(
             options.style_fontstyle_osd_1_textarea_2_releasedate)
-
-    ass_style.osd_1.textarea_3.fontstyle = {}
-    ass_style.osd_1.textarea_3.fontstyle.is_italic,
-    ass_style.osd_1.textarea_3.fontstyle.is_bold =
-        parse_styleoption_fontstyle(
-            options.style_fontstyle_osd_1_textarea_3)
-
-    ass_style.osd_1.textarea_4.fontstyle = {}
-    ass_style.osd_1.textarea_4.fontstyle.is_italic,
-    ass_style.osd_1.textarea_4.fontstyle.is_bold =
-        parse_styleoption_fontstyle(
-            options.style_fontstyle_osd_1_textarea_4)
 
     ass_style.osd_2.textarea_1.fontstyle = {}
     ass_style.osd_2.textarea_1.fontstyle.is_italic,
@@ -755,102 +760,109 @@ local function parse_style_options()
             options.style_fontstyle_osd_2_textarea_1)
 
     -- Style: Padding top
-    ass_style.osd_1.textarea_1.paddingtop =
-        parse_styleoption_paddingtop(
-            options.style_paddingtop_osd_1_textarea_1)
-
-    ass_style.osd_1.textarea_2.paddingtop =
-        parse_styleoption_paddingtop(
-            options.style_paddingtop_osd_1_textarea_2)
-
-    ass_style.osd_1.textarea_3.paddingtop =
-        parse_styleoption_paddingtop(
-            options.style_paddingtop_osd_1_textarea_3)
-
-    ass_style.osd_1.textarea_4.paddingtop =
-        parse_styleoption_paddingtop(
-            options.style_paddingtop_osd_1_textarea_4)
+    for i = 1, osd_1_textarea_count
+    do
+        ass_style.osd_1["textarea_" .. tostring(i)].paddingtop =
+            parse_styleoption_paddingtop(
+                options["style_paddingtop_osd_1_textarea_" .. tostring(i)])
+    end
 
     ass_style.osd_2.textarea_1.paddingtop =
         parse_styleoption_paddingtop(
             options.style_paddingtop_osd_2_textarea_1)
 
     -- Style: Shadow depth of the text
-    ass_style.osd_1.textarea_1.shad =
-        parse_styleoption_shad(
-            options.style_shad_osd_1_textarea_1)
-
-    ass_style.osd_1.textarea_2.shad =
-        parse_styleoption_shad(
-            options.style_shad_osd_1_textarea_2)
+    for i = 1, osd_1_textarea_count
+    do
+        ass_style.osd_1["textarea_" .. tostring(i)].shad =
+            parse_styleoption_shad(
+                options["style_shad_osd_1_textarea_" .. tostring(i)])
+    end
 
     ass_style.osd_1.textarea_2_reldate.shad =
         parse_styleoption_shad(
             nil)
-
-    ass_style.osd_1.textarea_3.shad =
-        parse_styleoption_shad(
-            options.style_shad_osd_1_textarea_3)
-
-    ass_style.osd_1.textarea_4.shad =
-        parse_styleoption_shad(
-            options.style_shad_osd_1_textarea_4)
 
     ass_style.osd_2.textarea_1.shad =
         parse_styleoption_shad(
             options.style_shad_osd_2_textarea_1)
 
     -- Style: Font scale in percent
-    ass_style.osd_1.textarea_1.fsc =
-        parse_styleoption_fsc(
-            options.style_fsc_osd_1_textarea_1)
-
-    ass_style.osd_1.textarea_2.fsc =
-        parse_styleoption_fsc(
-            options.style_fsc_osd_1_textarea_2)
+    for i = 1, osd_1_textarea_count
+    do
+        ass_style.osd_1["textarea_" .. tostring(i)].fsc =
+            parse_styleoption_fsc(
+                options["style_fsc_osd_1_textarea_" .. tostring(i)])
+    end
 
     ass_style.osd_1.textarea_2_reldate.fsc =
         parse_styleoption_fsc(
             nil)
-
-    ass_style.osd_1.textarea_3.fsc =
-        parse_styleoption_fsc(
-            options.style_fsc_osd_1_textarea_3)
-
-    ass_style.osd_1.textarea_4.fsc =
-        parse_styleoption_fsc(
-            options.style_fsc_osd_1_textarea_4)
 
     ass_style.osd_2.textarea_1.fsc =
         parse_styleoption_fsc(
             options.style_fsc_osd_2_textarea_1)
 
     -- Style: Distance between letters
-    ass_style.osd_1.textarea_1.fsp =
-        parse_styleoption_fsp(
-            options.style_fsp_osd_1_textarea_1)
-
-    ass_style.osd_1.textarea_2.fsp =
-        parse_styleoption_fsp(
-            options.style_fsp_osd_1_textarea_2)
+    for i = 1, osd_1_textarea_count
+    do
+        ass_style.osd_1["textarea_" .. tostring(i)].fsp =
+            parse_styleoption_fsp(
+                options["style_fsp_osd_1_textarea_" .. tostring(i)])
+    end
 
     ass_style.osd_1.textarea_2_reldate.fsp =
         parse_styleoption_fsp(
             nil)
-
-    ass_style.osd_1.textarea_3.fsp =
-        parse_styleoption_fsp(
-            options.style_fsp_osd_1_textarea_3)
-
-    ass_style.osd_1.textarea_4.fsp =
-        parse_styleoption_fsp(
-            options.style_fsp_osd_1_textarea_4)
 
     ass_style.osd_2.textarea_1.fsp =
         parse_styleoption_fsp(
             options.style_fsp_osd_2_textarea_1)
 
     return ass_style
+end
+
+local function prepare_gsubtable()
+    local gsub_textarea_slotmax = { 3, 3, 3 }
+
+    for gsub_textarea_idx, slotmax in ipairs(gsub_textarea_slotmax)
+    do
+        gsublist_text_area_fallback[gsub_textarea_idx] = {}
+        local gsub_prefix = "gsub_text_area_" .. gsub_textarea_idx
+        for pattern_idx = 1, slotmax
+        do
+            local key = options[gsub_prefix .. "_fallback_pattern_" .. pattern_idx]
+            local val = options[gsub_prefix .. "_fallback_repl_" .. pattern_idx]
+            val = val:gsub("%%UNICODE_SP%%", " ")
+            if str_isnonempty(key) and val
+            then
+                gsublist_text_area_fallback[gsub_textarea_idx][pattern_idx] =
+                    { [key] = val }
+            end
+        end
+    end
+
+    msg.debug(
+        "prepare_gsubtable(): " .. utils.to_string(gsublist_text_area_fallback))
+end
+
+local function gsubloop(gsub_textarea_idx, s)
+    msg.debug("gsubloop(): inp:  \"" .. s .. "\"")
+
+    for _, t in pairs(gsublist_text_area_fallback[gsub_textarea_idx])
+    do
+        for pattern, repl in pairs(t)
+        do
+            s = s:gsub(pattern, repl)
+            msg.debug(
+                "gsubloop(): gsub: pattern: \"" ..
+                pattern .. "\", repl: \"" .. repl .. "\"")
+            msg.debug(
+                "gsubloop(): outp: \"" .. s .. "\"")
+        end
+    end
+
+    return s
 end
 
 -- SSA/ASS helper functions
@@ -1143,14 +1155,9 @@ local function reset_usertoggled()
 end
 
 local function on_metadata_change(metadata_key, metadata_val)
---     msg.debug("on_metadata_change(): " ..
---         tostring(metadata_key) ..
---         ": " ..
---         utils.to_string(metadata_val))
-
     --[[
     The incoming table with metadata can have all the possible letter
-    capitalizations for table keys which are case sensitive in Lua ->
+    capitalizations for table keys which are case sensitive in Lua -->
     properties are always querried via mp.get_property().
     ]]
 
@@ -1206,8 +1213,7 @@ local function on_metadata_change(metadata_key, metadata_val)
                 -- Foldername-Artist fallback
                 if str_isempty(textarea_1_str)
                 then
-                    textarea_1_str =
-                        str_gsubloop(prop_elongatedpath, gsublist_text_area_1_fallback)
+                    textarea_1_str = gsubloop(1, prop_elongatedpath)
                 end
             end
         end
@@ -1272,8 +1278,7 @@ local function on_metadata_change(metadata_key, metadata_val)
         -- Foldername-Album fallback
         if str_isempty(textarea_2_str)
         then
-            textarea_2_str =
-                str_gsubloop(prop_elongatedpath, gsublist_text_area_2_fallback)
+            textarea_2_str = gsubloop(2, prop_elongatedpath)
         end
 
     else -- playing from remote source
@@ -1322,7 +1327,7 @@ local function on_metadata_change(metadata_key, metadata_val)
             textarea_3_str =
                 mp.get_property_osd("filename/no-ext")
             textarea_3_str =
-                str_gsubloop(textarea_3_str, gsublist_text_area_3_fallback)
+                gsubloop(3, textarea_3_str)
         end
 
     else -- playing from remote source
@@ -1593,6 +1598,7 @@ local function on_tracklist_change(name, tracklist)
 end
 
 ass_prepare_templates()
+prepare_gsubtable()
 
 mp.add_key_binding(
     options.key_toggleenable,

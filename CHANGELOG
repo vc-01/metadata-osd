@@ -1,3 +1,8 @@
+Unreleased
+===============================
+ * Added: User options for metadata fallback string substitutions
+     - gsub_text_area_*_fallback_*
+
 metadata-osd-0.5.0 / 2023-02-10
 ===============================
  * BREAKING CHANGES:
