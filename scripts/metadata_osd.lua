@@ -1359,8 +1359,7 @@ local function on_metadata_change(metadata_key, metadata_val)
         if prop_chapter_curr and
             prop_chapters_total
         then
-            if ( options.show_chapternumber or
-                options.show_current_chapter_number )
+            if options.show_chapternumber
             then
                 local chapternum_str = ""
 
@@ -1391,20 +1390,18 @@ local function on_metadata_change(metadata_key, metadata_val)
             end
 
         -- meta: Track Number
-        elseif ( options.show_albumtracknumber or
-            options.show_current_albumtrack_number or
-            options.show_albumtrack_number ) and
+        elseif options.show_albumtracknumber and
             ( curr_mediatype == mediatype.AUDIO or
             curr_mediatype == mediatype.AUDIO_ALBUMART ) and
             str_isnonempty(prop_meta_track)
         then
-            local _, _, s_match = string.find(prop_meta_track, '^([%d]+)')
+            local _, _, s_match = string.find(prop_meta_track, '^(%d+)')
             if s_match
             then
                 local tracknum = tonumber(s_match)
                 if tracknum and
                     tracknum < 999 -- track number can contain release year,
-                                    -- skip more-than-three-digit track numbers
+                                   -- skip for more-than-three-digit track numbers
                 then
                     local tracknum_str = ""
 
@@ -1559,9 +1556,9 @@ end
 local function on_tracklist_change(name, tracklist)
     msg.debug("on_tracklist_change()")
 
-    curr_mediatype = mediatype.UNKNOWN
     osd_overlay_osd_1.data = nil
     osd_overlay_osd_2.data = nil
+    curr_mediatype = mediatype.UNKNOWN
 
     if tracklist then
         msg.debug("on_tracklist_change(): num of tracks: " .. tostring(#tracklist))
