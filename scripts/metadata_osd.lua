@@ -1,5 +1,5 @@
 --[[
-metadata_osd. Version 0.5.0
+metadata_osd. Version 0.5.1
 
 Copyright (c) 2022-2023 Vladimir Chren
 
@@ -706,15 +706,15 @@ local function parse_styleoption_fontstyle(styleopt_fontstyle)
 end
 
 local function parse_style_options()
-    local osd_1_textarea_count = 4
-    local ass_style = {}
+    local osd_1_textarea_count = 4 -- used for looping over textarea_* variables
 
+    -- prepare empty table variables
+    local ass_style = {}
     ass_style.osd_1 = {}
     for i = 1, osd_1_textarea_count
     do
         ass_style.osd_1["textarea_" .. tostring(i)] = {}
     end
-
     ass_style.osd_1.textarea_2_reldate = {}
     ass_style.osd_2 = {}
     ass_style.osd_2.textarea_1 = {}
@@ -767,6 +767,8 @@ local function parse_style_options()
                 options["style_paddingtop_osd_1_textarea_" .. tostring(i)])
     end
 
+    ass_style.osd_1.textarea_2_reldate.paddingtop = ""
+
     ass_style.osd_2.textarea_1.paddingtop =
         parse_styleoption_paddingtop(
             options.style_paddingtop_osd_2_textarea_1)
@@ -781,7 +783,7 @@ local function parse_style_options()
 
     ass_style.osd_1.textarea_2_reldate.shad =
         parse_styleoption_shad(
-            nil)
+            options.style_shad_osd_1_textarea_2)
 
     ass_style.osd_2.textarea_1.shad =
         parse_styleoption_shad(
@@ -797,7 +799,7 @@ local function parse_style_options()
 
     ass_style.osd_1.textarea_2_reldate.fsc =
         parse_styleoption_fsc(
-            nil)
+            options.style_fsc_osd_1_textarea_2)
 
     ass_style.osd_2.textarea_1.fsc =
         parse_styleoption_fsc(
@@ -813,7 +815,7 @@ local function parse_style_options()
 
     ass_style.osd_1.textarea_2_reldate.fsp =
         parse_styleoption_fsp(
-            nil)
+            options.style_fsp_osd_1_textarea_2)
 
     ass_style.osd_2.textarea_1.fsp =
         parse_styleoption_fsp(
@@ -923,15 +925,15 @@ local function ass_prepare_template_textarea(ass_style_textarea, textmsg_strid)
             ass_style_textarea.shad ..
             ass_style_textarea.fsc ..
             ass_style_textarea.fsp ..
+            ass_style_textarea.paddingtop ..
             ass_styleoverride_fontstyle(
                 ass_style_textarea.fontstyle.is_italic,
                 ass_style_textarea.fontstyle.is_bold,
-                textmsg_strid)
-            -- tags are *always* opened, not resetting back to defaults...
-            -- "{\\fsp0}" ..
-            -- "{\\fscx100}" ..
-            -- "{\\fscy100}" ..
-            -- "{\\shad0}"
+                textmsg_strid) ..
+            "{\\fsp0}" ..
+            "{\\fscx100}" ..
+            "{\\fscy100}" ..
+            "{\\shad0}"
     end
 
     return res
@@ -945,14 +947,11 @@ local function ass_prepare_templates()
         ass_style.osd_1.alignment ..
         ass_style.osd_1.bord ..
 
-        ass_style.osd_1.textarea_1.paddingtop ..
-
         ass_prepare_template_textarea(
             ass_style.osd_1.textarea_1,
             ass_tmpl_strid_textarea_1_str) ..
 
         string.rep(ass_newline(), 1) ..
-        ass_style.osd_1.textarea_2.paddingtop ..
 
         ass_prepare_template_textarea(
             ass_style.osd_1.textarea_2,
@@ -963,14 +962,12 @@ local function ass_prepare_templates()
             ass_tmpl_strid_textarea_2_reldate_str) ..
 
         string.rep(ass_newline(), 1) ..
-        ass_style.osd_1.textarea_3.paddingtop ..
 
         ass_prepare_template_textarea(
             ass_style.osd_1.textarea_3,
             ass_tmpl_strid_textarea_3_str) ..
 
         string.rep(ass_newline(), 1) ..
-        ass_style.osd_1.textarea_4.paddingtop ..
 
         ass_prepare_template_textarea(
             ass_style.osd_1.textarea_4,
@@ -979,8 +976,6 @@ local function ass_prepare_templates()
     ass_tmpl_osd_2 =
         ass_style.osd_2.alignment ..
         ass_style.osd_2.bord ..
-
-        ass_style.osd_2.textarea_1.paddingtop ..
 
         ass_prepare_template_textarea(
             ass_style.osd_2.textarea_1,
