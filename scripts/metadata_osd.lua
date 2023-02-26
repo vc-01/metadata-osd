@@ -976,7 +976,7 @@ local function ass_newline()
 end
 
 local function ass_prepare_template_textarea(ass_style_textarea, content_textarea)
-    res = nil
+    res = ""
 
     if type(ass_style_textarea) == "table" and
         str_isnonempty(content_textarea)
