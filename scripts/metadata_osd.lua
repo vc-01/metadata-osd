@@ -1,5 +1,5 @@
 --[[
-metadata_osd. Version 0.5.1
+metadata_osd. Version 0.5.2
 
 Copyright (c) 2022-2023 Vladimir Chren
 
@@ -1725,13 +1725,15 @@ reeval_osd_enabled = function()
     end
 end
 
+local function on_start_file()
+    osd_overlay_osd_1.data = nil
+    osd_overlay_osd_2.data = nil
+end
+
 local function on_tracklist_change(name, tracklist)
     msg.debug("on_tracklist_change()")
 
-    osd_overlay_osd_1.data = nil
-    osd_overlay_osd_2.data = nil
-    ass_tmpl_osd_1 = nil
-    ass_tmpl_osd_2 = nil
+    local prev_mediatype = curr_mediatype
     curr_mediatype = mediatype.UNKNOWN
 
     if tracklist then
@@ -1762,16 +1764,22 @@ local function on_tracklist_change(name, tracklist)
         end
     end
 
-    msg.debug("on_tracklist_change(): current media type: " ..
-        curr_mediatype:gsub("^%l", string.upper))
+    if prev_mediatype ~= curr_mediatype
+    then
+        msg.debug("on_tracklist_change(): current media type: " ..
+            curr_mediatype:gsub("^%l", string.upper))
 
-    for _, mediatype_ in pairs(mediatype)
-    do
-        if curr_mediatype == mediatype_
-        then
-            ass_tmpl_osd_1 = ass_tmpl_osd_1_media[mediatype_]
-            ass_tmpl_osd_2 = ass_tmpl_osd_2_media[mediatype_]
-            break
+        ass_tmpl_osd_1 = nil
+        ass_tmpl_osd_2 = nil
+
+        for _, mediatype_ in pairs(mediatype)
+        do
+            if curr_mediatype == mediatype_
+            then
+                ass_tmpl_osd_1 = ass_tmpl_osd_1_media[mediatype_]
+                ass_tmpl_osd_2 = ass_tmpl_osd_2_media[mediatype_]
+                break
+            end
         end
     end
 
@@ -1791,6 +1799,10 @@ mp.add_key_binding(
     options.key_showstatusosd,
     "showstatusosd",
     show_statusosd)
+
+mp.register_event(
+    "start-file",
+    on_start_file)
 
 mp.observe_property(
     "track-list",
