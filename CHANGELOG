@@ -1,7 +1,6 @@
-Unreleased
+metadata-osd-0.5.3 / 2023-03-09
 ===============================
- * Added: User options for metadata fallback string substitutions
-     - gsub_text_area_*_fallback_*
+ * fix: Parse paths with backslashes for foldername fallback
 
 metadata-osd-0.5.2 / 2023-03-07
 ===============================

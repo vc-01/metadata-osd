@@ -1,5 +1,5 @@
 --[[
-metadata_osd. Version 0.5.2
+metadata_osd. Version 0.5.3
 
 Copyright (c) 2022-2023 Vladimir Chren
 
@@ -178,22 +178,27 @@ local options = {
     style_fsp_osd_1_textarea_4 = 0,
     style_fsp_osd_2_textarea_1 = 0,
 
+    -- *** UNSTABLE OPTIONS BELOW ***
+    -- Options below are still riping. They might be changed or removed
+    -- in the future without further notice.
+
     -- Global string substitutions for filename / foldername metadata fallback
 
     -- For *_pattern_* options, so called "patterns" apply as documented in Lua
     -- documentation:
     --   https://www.lua.org/manual/5.1/manual.html#5.4.1
-    -- Characters after equal sign '=' are not interpreted specially including
-    -- another equal signs or quotes.
+
+    -- Characters after equal sign '=' are not interpreted specially,
+    -- additional equal signs or quotes will be part of the value.
 
     -- For *_repl_* options, value is taken as such as a string replacement.
     -- Optionally, space character can be entered as '%UNICODE_SP%' to make it
-    -- visible if it's at the end for example.
+    -- visible (if it's at the end for example).
 
-    -- Text Area 1: Full file path as starting input
-    -- Match & replace with folder up up
-    gsub_text_area_1_fallback_pattern_1 = ".*/(.*)/.*/.*",
-    gsub_text_area_1_fallback_repl_1 = "%1",
+    -- Text Area 1: Folder name of the loaded file
+    -- Empty slot
+    gsub_text_area_1_fallback_pattern_1 = "",
+    gsub_text_area_1_fallback_repl_1 = "",
     -- Empty slot
     gsub_text_area_1_fallback_pattern_2 = "",
     gsub_text_area_1_fallback_repl_2 = "",
@@ -201,10 +206,10 @@ local options = {
     gsub_text_area_1_fallback_pattern_3 = "",
     gsub_text_area_1_fallback_repl_3 = "",
 
-    -- Text Area 2: Full file path as starting input
-    -- Match & replace with folder up
-    gsub_text_area_2_fallback_pattern_1 = ".*/(.*)/.*",
-    gsub_text_area_2_fallback_repl_1 = "%1",
+    -- Text Area 2: Folder name one above of the loaded file
+    -- Empty slot
+    gsub_text_area_2_fallback_pattern_1 = "",
+    gsub_text_area_2_fallback_repl_1 = "",
     -- Empty slot
     gsub_text_area_2_fallback_pattern_2 = "",
     gsub_text_area_2_fallback_repl_2 = "",
@@ -212,7 +217,7 @@ local options = {
     gsub_text_area_2_fallback_pattern_3 = "",
     gsub_text_area_2_fallback_repl_3 = "",
 
-    -- Text Area 3: File name without extension as starting input
+    -- Text Area 3: File name without extension
     -- Replace underscores with spaces
     gsub_text_area_3_fallback_pattern_1 = "_",
     gsub_text_area_3_fallback_repl_1 = "%UNICODE_SP%",
@@ -222,10 +227,6 @@ local options = {
     -- Empty slot
     gsub_text_area_3_fallback_pattern_3 = "",
     gsub_text_area_3_fallback_repl_3 = "",
-
-    -- *** UNSTABLE OPTIONS BELOW ***
-    -- Options below are still riping. They might be changed or removed
-    -- in the future without further notice.
 
     -- Content of each text area for media type
 
@@ -1276,10 +1277,11 @@ local function on_metadata_change(metadata_key, metadata_val)
     properties are always querried via mp.get_property().
     ]]
 
-    local prop_elongatedpath  =
-        mp.get_property_osd("working-directory") ..
-        "/" ..
-        mp.get_property_osd("path")
+    local prop_abspath  =
+        utils.join_path(
+            mp.get_property_osd("working-directory"),
+            mp.get_property_osd("path")
+        )
 
     local prop_meta_track     = mp.get_property_osd("metadata/by-key/track")
     local prop_meta_title     = mp.get_property_osd("metadata/by-key/title")
@@ -1338,7 +1340,11 @@ local function on_metadata_change(metadata_key, metadata_val)
                 if str_isempty(textarea_1_str)
                 then
                     textarea_1_metakey_str = "Path"
-                    textarea_1_str = gsubloop(1, prop_elongatedpath)
+                    local folder_up_up = string.match(prop_abspath, ".*[/\\](.*)[/\\].*[/\\].*")
+                    if folder_up_up
+                    then
+                        textarea_1_str = gsubloop(1, folder_up_up)
+                    end
                 end
             end
         end
@@ -1415,7 +1421,11 @@ local function on_metadata_change(metadata_key, metadata_val)
         if str_isempty(textarea_2_str)
         then
             textarea_2_metakey_str = "Path"
-            textarea_2_str = gsubloop(2, prop_elongatedpath)
+            local folder_up = string.match(prop_abspath, ".*[/\\](.*)[/\\].*")
+            if folder_up
+            then
+                textarea_2_str = gsubloop(2, folder_up)
+            end
         end
 
     else -- playing from remote source
