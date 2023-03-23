@@ -1,5 +1,5 @@
 --[[
-metadata_osd. Version 0.5.3
+metadata_osd. Version 0.5.4
 
 Copyright (c) 2022-2023 Vladimir Chren
 
@@ -504,7 +504,7 @@ local function str_trunc(str)
 
             if u_b1 == nil and nextcharoffs == nil -- reached end of string
             then
-                goto exit
+                return result
             elseif u_b1 ~= nil and nextcharoffs == nil -- found invalid utf-8 char
             then
                 msg.debug("str_trunc(): found invalid UTF-8 character; falling back to byte-oriented string truncate.")
@@ -522,7 +522,6 @@ local function str_trunc(str)
         end
     end
 
-    ::exit::
     return result
 end
 
@@ -1024,87 +1023,83 @@ local function ass_prepare_templates()
 
     for _, mediatype_ in pairs(mediatype)
     do
-        if mediatype_ == mediatype.UNKNOWN
+        if mediatype_ ~= mediatype.UNKNOWN
         then
-            goto continue
-        end
+            local ass_tmpl_osd_1 =
+                ass_style.osd_1.alignment ..
+                ass_style.osd_1.bord ..
+                tmpl_osd_1
 
-        local ass_tmpl_osd_1 =
-            ass_style.osd_1.alignment ..
-            ass_style.osd_1.bord ..
-            tmpl_osd_1
+            for i = 1, osd_1_textarea_count
+            do
+                local tmpl_strid_textarea =
+                    "{{TEXTAREA_" .. tostring(i) .. "_CONTENT}}"
 
-        for i = 1, osd_1_textarea_count
-        do
-            local tmpl_strid_textarea =
-                "{{TEXTAREA_" .. tostring(i) .. "_CONTENT}}"
+                local ass_style_textarea =
+                    ass_style.osd_1["textarea_" .. tostring(i)]
 
-            local ass_style_textarea =
-                ass_style.osd_1["textarea_" .. tostring(i)]
+                local content_textarea =
+                    options["content_osd_1_textarea_" ..
+                            tostring(i) ..
+                            "_" .. mediatype_]
 
-            local content_textarea =
-                options["content_osd_1_textarea_" ..
-                        tostring(i) ..
-                        "_" .. mediatype_]
+                local ass_tmpl_textarea =
+                    ass_prepare_template_textarea(
+                        ass_style_textarea,
+                        content_textarea)
 
-            local ass_tmpl_textarea =
-                ass_prepare_template_textarea(
-                    ass_style_textarea,
-                    content_textarea)
+                ass_tmpl_osd_1 =
+                    string.gsub(
+                        ass_tmpl_osd_1,
+                        tmpl_strid_textarea,
+                        ass_tmpl_textarea)
+            end
 
             ass_tmpl_osd_1 =
                 string.gsub(
                     ass_tmpl_osd_1,
-                    tmpl_strid_textarea,
-                    ass_tmpl_textarea)
-        end
+                    "{{TEXTAREA_2_RELDATE_CONTENT}}",
+                    ass_prepare_template_textarea(
+                        ass_style.osd_1.textarea_2_reldate,
+                        options["content_osd_1_textarea_2_reldate_" ..
+                                mediatype_]))
 
-        ass_tmpl_osd_1 =
-            string.gsub(
-                ass_tmpl_osd_1,
-                "{{TEXTAREA_2_RELDATE_CONTENT}}",
+            ass_tmpl_osd_1 =
+                string.gsub(
+                    ass_tmpl_osd_1,
+                    "{{ASS_NEWLINE}}",
+                    ass_newline())
+
+            local ass_tmpl_osd_2 =
+                ass_style.osd_2.alignment ..
+                ass_style.osd_2.bord ..
+
                 ass_prepare_template_textarea(
-                    ass_style.osd_1.textarea_2_reldate,
-                    options["content_osd_1_textarea_2_reldate_" ..
-                            mediatype_]))
+                    ass_style.osd_2.textarea_1,
+                    options["content_osd_2_textarea_1_" ..
+                            mediatype_])
 
-        ass_tmpl_osd_1 =
-            string.gsub(
-                ass_tmpl_osd_1,
-                "{{ASS_NEWLINE}}",
-                ass_newline())
+            ass_tmpl_osd_2 =
+                string.gsub(
+                    ass_tmpl_osd_2,
+                    "{{ASS_NEWLINE}}",
+                    ass_newline())
 
-        local ass_tmpl_osd_2 =
-            ass_style.osd_2.alignment ..
-            ass_style.osd_2.bord ..
+            ass_tmpl_osd_1_media[mediatype_] = ass_tmpl_osd_1
+            ass_tmpl_osd_2_media[mediatype_] = ass_tmpl_osd_2
 
-            ass_prepare_template_textarea(
-                ass_style.osd_2.textarea_1,
-                options["content_osd_2_textarea_1_" ..
-                        mediatype_])
+            msg.debug(
+                "ass_prepare_templates(): osd_1 template for " ..
+                mediatype_ ..
+                ": " ..
+                ass_tmpl_osd_1)
 
-        ass_tmpl_osd_2 =
-            string.gsub(
-                ass_tmpl_osd_2,
-                "{{ASS_NEWLINE}}",
-                ass_newline())
-
-        ass_tmpl_osd_1_media[mediatype_] = ass_tmpl_osd_1
-        ass_tmpl_osd_2_media[mediatype_] = ass_tmpl_osd_2
-
-        msg.debug(
-            "ass_prepare_templates(): osd_1 template for " ..
-            mediatype_ ..
-            ": " ..
-            ass_tmpl_osd_1)
-
-        msg.debug(
-            "ass_prepare_templates(): osd_2 template for " ..
-            mediatype_ ..
-            ": " ..
-            ass_tmpl_osd_2)
-
-        ::continue::
+            msg.debug(
+                "ass_prepare_templates(): osd_2 template for " ..
+                mediatype_ ..
+                ": " ..
+                ass_tmpl_osd_2)
+        end
     end
 end
 
@@ -1750,27 +1745,23 @@ local function on_tracklist_change(name, tracklist)
         msg.debug("on_tracklist_change(): num of tracks: " .. tostring(#tracklist))
 
         for _, track in ipairs(tracklist) do
-            if not track.selected then
-                goto continue
-            end
-
-            if track.type == "audio" and curr_mediatype == mediatype.UNKNOWN then
-                msg.debug("on_tracklist_change(): audio track selected")
-                curr_mediatype = mediatype.AUDIO
-            elseif track.type == "video" then
-                msg.debug("on_tracklist_change(): video track selected")
-                curr_mediatype = mediatype.VIDEO
-                if track.image then
-                    msg.debug("on_tracklist_change(): video track is image")
-                    curr_mediatype = mediatype.IMAGE
-                    if track.albumart then
-                        msg.debug("on_tracklist_change(): video track is albumart.")
-                        curr_mediatype = mediatype.AUDIO_WITHALBUMART
+            if track.selected then
+                if track.type == "audio" and curr_mediatype == mediatype.UNKNOWN then
+                    msg.debug("on_tracklist_change(): audio track selected")
+                    curr_mediatype = mediatype.AUDIO
+                elseif track.type == "video" then
+                    msg.debug("on_tracklist_change(): video track selected")
+                    curr_mediatype = mediatype.VIDEO
+                    if track.image then
+                        msg.debug("on_tracklist_change(): video track is image")
+                        curr_mediatype = mediatype.IMAGE
+                        if track.albumart then
+                            msg.debug("on_tracklist_change(): video track is albumart.")
+                            curr_mediatype = mediatype.AUDIO_WITHALBUMART
+                        end
                     end
                 end
             end
-
-            ::continue::
         end
     end
 
