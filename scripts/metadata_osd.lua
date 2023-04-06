@@ -234,33 +234,31 @@ local options = {
 
     content_osd_1_textarea_1_audio = "##TEXTAREA_1_GEN##",
     content_osd_1_textarea_2_audio = "##TEXTAREA_2_GEN##",
-    content_osd_1_textarea_2_reldate_audio = "##TEXTAREA_2_RELDATE_GEN##",
+    content_osd_1_textarea_2_reldate_audio = "{#?TEXTAREA_2_RELDATE_GEN} (##TEXTAREA_2_RELDATE_GEN##){#/}",
     content_osd_1_textarea_3_audio = "##TEXTAREA_3_GEN##",
     content_osd_1_textarea_4_audio = "##TEXTAREA_4_GEN##",
     content_osd_2_textarea_1_audio = "##TEXTAREA_1_GEN##",
 
     content_osd_1_textarea_1_audio_withalbumart = "##TEXTAREA_1_GEN##",
     content_osd_1_textarea_2_audio_withalbumart = "##TEXTAREA_2_GEN##",
-    content_osd_1_textarea_2_reldate_audio_withalbumart = "##TEXTAREA_2_RELDATE_GEN##",
+    content_osd_1_textarea_2_reldate_audio_withalbumart = "{#?TEXTAREA_2_RELDATE_GEN} (##TEXTAREA_2_RELDATE_GEN##){#/}",
     content_osd_1_textarea_3_audio_withalbumart = "##TEXTAREA_3_GEN##",
     content_osd_1_textarea_4_audio_withalbumart = "##TEXTAREA_4_GEN##",
     content_osd_2_textarea_1_audio_withalbumart = "##TEXTAREA_1_GEN##",
 
     content_osd_1_textarea_1_video = "##TEXTAREA_1_GEN##",
     content_osd_1_textarea_2_video = "##TEXTAREA_2_GEN##",
-    content_osd_1_textarea_2_reldate_video = "##TEXTAREA_2_RELDATE_GEN##",
+    content_osd_1_textarea_2_reldate_video = "{#?TEXTAREA_2_RELDATE_GEN} (##TEXTAREA_2_RELDATE_GEN##){#/}",
     content_osd_1_textarea_3_video = "##TEXTAREA_3_GEN##",
     content_osd_1_textarea_4_video = "##TEXTAREA_4_GEN##",
     content_osd_2_textarea_1_video = "##TEXTAREA_1_GEN##",
 
     content_osd_1_textarea_1_image = "##TEXTAREA_1_GEN##",
     content_osd_1_textarea_2_image = "##TEXTAREA_2_GEN##",
-    content_osd_1_textarea_2_reldate_image = "##TEXTAREA_2_RELDATE_GEN##",
+    content_osd_1_textarea_2_reldate_image = "{#?TEXTAREA_2_RELDATE_GEN} (##TEXTAREA_2_RELDATE_GEN##){#/}",
     content_osd_1_textarea_3_image = "##TEXTAREA_3_GEN##",
     content_osd_1_textarea_4_image = "##TEXTAREA_4_GEN##",
     content_osd_2_textarea_1_image = "##TEXTAREA_1_GEN##",
-
-    content_osd_allow_assstyleoverride = false,
 }
 
 opt.read_options(options)
@@ -908,35 +906,42 @@ end
 -- SSA/ASS helper functions
 --   spec. url: http://www.tcax.org/docs/ass-specs.htm
 
-local ass_tmpl_osd_1 = nil
-local ass_tmpl_osd_2 = nil
-
-local ass_tmpl_osd_1_media = {
-    audio = nil,
-    audio_withalbumart = nil,
-    video = nil,
-    image = nil,
-}
-
-local ass_tmpl_osd_2_media = {
-    audio = nil,
-    audio_withalbumart = nil,
-    video = nil,
-    image = nil,
-}
-
-local ass_tmpl_strid = {
-    textarea_1_str = "##TEXTAREA_1_GEN##",
-    textarea_2_str = "##TEXTAREA_2_GEN##",
-    textarea_2_reldate_str = "##TEXTAREA_2_RELDATE_GEN##",
-    textarea_3_str = "##TEXTAREA_3_GEN##",
-    textarea_4_str = "##TEXTAREA_4_GEN##",
-    textarea_1_metakey_str = "##TEXTAREA_1_METAKEY##",
-    textarea_2_metakey_str = "##TEXTAREA_2_METAKEY##",
-    textarea_2_reldate_metakey_str = "##TEXTAREA_2_RELDATE_METAKEY##",
-    textarea_3_metakey_str = "##TEXTAREA_3_METAKEY##",
-    textarea_4_metakey_str = "##TEXTAREA_4_METAKEY##",
+local ass_tmpl = {
+    osd_1 = {
+        curr_tmpl = nil,
+        tokens_media = {
+            audio = nil,
+            audio_withalbumart = nil,
+            video = nil,
+            image = nil,
+        }
+    },
+    osd_2 = {
+        curr_tmpl = nil,
+        tokens_media = {
+            audio = nil,
+            audio_withalbumart = nil,
+            video = nil,
+            image = nil,
+        }
+    },
+    strid = {
+        textarea_1 = "TEXTAREA_1_GEN",
+        textarea_2 = "TEXTAREA_2_GEN",
+        textarea_2_reldate = "TEXTAREA_2_RELDATE_GEN",
+        textarea_3 = "TEXTAREA_3_GEN",
+        textarea_4 = "TEXTAREA_4_GEN",
+        textarea_1_metakey = "TEXTAREA_1_METAKEY",
+        textarea_2_metakey = "TEXTAREA_2_METAKEY",
+        textarea_2_reldate_metakey = "TEXTAREA_2_RELDATE_METAKEY",
+        textarea_3_metakey = "TEXTAREA_3_METAKEY",
+        textarea_4_metakey = "TEXTAREA_4_METAKEY",
     }
+}
+local tmpl_token_type = {
+    TEXT = "_text_",
+    COND = "_cond_"
+}
 
 local function ass_styleoverride_fontstyle(italic, bold, str)
     res = ""
@@ -981,14 +986,11 @@ local function ass_prepare_template_textarea(ass_style_textarea, content_textare
     if type(ass_style_textarea) == "table" and
         str_isnonempty(content_textarea)
     then
-        if not options.content_osd_allow_assstyleoverride
-        then
-            content_textarea = -- escape ASS/SSA style override code mark '{'
-                string.gsub(
-                    content_textarea,
-                    "{",
-                    "\\{")
-        end
+        content_textarea = -- escape ASS/SSA style override code mark '{'
+            string.gsub(
+                content_textarea,
+                "{",
+                "\\{")
 
         content_textarea = -- replace %UNICODE_SP% with space character
             string.gsub(
@@ -1019,6 +1021,10 @@ local function ass_prepare_templates()
         parse_style_options()
 
     local tmpl_osd_1 = "{{TEXTAREA_1_CONTENT}}{{ASS_NEWLINE}}{{TEXTAREA_2_CONTENT}}{{TEXTAREA_2_RELDATE_CONTENT}}{{ASS_NEWLINE}}{{TEXTAREA_3_CONTENT}}{{ASS_NEWLINE}}{{TEXTAREA_4_CONTENT}}"
+    local ass_tmpl_media = {
+        osd_1 = {},
+        osd_2 = {}
+    }
     local osd_1_textarea_count = 4 -- for textarea_* loops
 
     for _, mediatype_ in pairs(mediatype)
@@ -1085,20 +1091,88 @@ local function ass_prepare_templates()
                     "{{ASS_NEWLINE}}",
                     ass_newline())
 
-            ass_tmpl_osd_1_media[mediatype_] = ass_tmpl_osd_1
-            ass_tmpl_osd_2_media[mediatype_] = ass_tmpl_osd_2
+            ass_tmpl_media.osd_1[mediatype_] = ass_tmpl_osd_1
+            ass_tmpl_media.osd_2[mediatype_] = ass_tmpl_osd_2
 
-            msg.debug(
-                "ass_prepare_templates(): osd_1 template for " ..
+            msg.trace(
+                "ass_prepare_templates(): tmpl_media (osd_1/" ..
                 mediatype_ ..
-                ": " ..
+                "): " ..
                 ass_tmpl_osd_1)
 
-            msg.debug(
-                "ass_prepare_templates(): osd_2 template for " ..
+            msg.trace(
+                "ass_prepare_templates(): tmpl_media (osd_2/" ..
                 mediatype_ ..
-                ": " ..
+                "): " ..
                 ass_tmpl_osd_2)
+        end
+    end
+
+    local token_text
+
+    for _, mediatype_ in pairs(mediatype)
+    do
+        if mediatype_ ~= mediatype.UNKNOWN
+        then
+            for osd_n = 1, 2
+            do
+                local tmpl = ass_tmpl_media["osd_" .. osd_n][mediatype_]
+                local token
+                local tmpl_tokens = {}
+                local curr_pos = 1
+
+                repeat
+                    local curr_token_type = tmpl_token_type.TEXT
+                    local idx_section_start,
+                        idx_section_end,
+                        section_name,
+                        section_text =
+                            string.find(tmpl, "\\{#[?](.-)}(.-)\\{#/}", curr_pos)
+
+                    if idx_section_start and idx_section_end
+                        and section_name and section_text
+                    then
+                        if idx_section_start ~= curr_pos
+                        then
+                            token = {
+                                token_type =
+                                    curr_token_type,
+                                token_text =
+                                    string.sub(tmpl, curr_pos, idx_section_start - 1)
+                            }
+                            table.insert(tmpl_tokens, token)
+                        end
+
+                        curr_token_type = tmpl_token_type.COND
+                        token = {
+                            token_type =
+                                curr_token_type,
+                            token_var =
+                                section_name,
+                            token_text =
+                                section_text
+                        }
+                        table.insert(tmpl_tokens, token)
+                        curr_pos = idx_section_end + 1
+
+                    else
+                        token = {
+                            token_type =
+                                curr_token_type,
+                            token_text =
+                                string.sub(tmpl, curr_pos)
+                        }
+                        table.insert(tmpl_tokens, token)
+                        break
+                    end
+                until curr_pos >= string.len(tmpl)
+
+                ass_tmpl["osd_" .. osd_n].tokens_media[mediatype_] = tmpl_tokens
+                msg.trace("ass_prepare_templates(): tmpl_tokens (osd_" ..
+                    osd_n .. "/" ..
+                    mediatype_ .. "): " ..
+                    utils.to_string(tmpl_tokens))
+            end
         end
     end
 end
@@ -1265,13 +1339,48 @@ local function reset_usertoggled()
     show_statusosd()
 end
 
+local function tmpl_fill_content(tmpl_tokens, tmpl_data)
+    local tmpl = ""
+
+    for _, token in ipairs(tmpl_tokens)
+    do
+        msg.debug("tmpl_fill_content(): token: " ..
+            utils.to_string(token))
+
+        if token.token_type == tmpl_token_type.TEXT
+        then
+            tmpl = tmpl .. token.token_text
+        elseif token.token_type == tmpl_token_type.COND
+            and str_isnonempty(tmpl_data[token.token_var])
+        then
+            tmpl = tmpl .. token.token_text
+        end
+    end
+
+    msg.debug("tmpl_fill_content(): tmpl:  " .. tmpl)
+
+    for _, strid in pairs(ass_tmpl.strid)
+    do
+        msg.debug("tmpl_fill_content(): gsub:  " .. strid ..
+            " --> " .. tostring(tmpl_data[strid]))
+
+        tmpl = string.gsub(
+            tmpl,
+            "##" .. strid .. "##",
+            str_isnonempty(tmpl_data[strid]) and
+                str_trunc(tmpl_data[strid]) or "",
+            1)
+    end
+
+    return tmpl
+end
+
 local function on_metadata_change(metadata_key, metadata_val)
     --[[
     The incoming table with metadata can have all the possible letter
     capitalizations for table keys which are case sensitive in Lua -->
     properties are always querried via mp.get_property().
     ]]
-
     local prop_abspath  =
         utils.join_path(
             mp.get_property_osd("working-directory"),
@@ -1287,10 +1396,11 @@ local function on_metadata_change(metadata_key, metadata_val)
     local prop_chapter_curr   = tonumber(mp.get_property("chapter"), 10)
     local prop_chapters_total = tonumber(mp.get_property("chapters"), 10)
 
-    if not ass_tmpl_osd_1 then
+    if not ass_tmpl.osd_1.curr_tmpl then
         return
     end
-    local osd_str = ass_tmpl_osd_1
+    local osd_tmpl = ass_tmpl.osd_1.curr_tmpl
+    local tmpl_data = {}
     local textarea_1_str = nil
     local textarea_1_metakey_str = nil
     local textarea_2_str = nil
@@ -1350,18 +1460,8 @@ local function on_metadata_change(metadata_key, metadata_val)
         textarea_1_str = mp.get_property_osd("metadata/by-key/uploader")
     end
 
-    osd_str = string.gsub(
-        osd_str,
-        ass_tmpl_strid.textarea_1_str,
-        str_isnonempty(textarea_1_str) and
-            str_trunc(textarea_1_str) or "",
-        1)
-
-    osd_str = string.gsub(
-        osd_str,
-        ass_tmpl_strid.textarea_1_metakey_str,
-        str_isnonempty(textarea_1_metakey_str) and textarea_1_metakey_str or "",
-        1)
+    tmpl_data[ass_tmpl.strid.textarea_1] = textarea_1_str
+    tmpl_data[ass_tmpl.strid.textarea_1_metakey] = textarea_1_metakey_str
 
     -- ┌─────────────────┐
     -- │ TEXT AREA 2     │
@@ -1379,7 +1479,7 @@ local function on_metadata_change(metadata_key, metadata_val)
         if str_isnonempty(prop_meta_reldate)
         then
             textarea_2_reldate_metakey_str = "Release Year"
-            textarea_2_reldate_str = " (" .. prop_meta_reldate .. ")"
+            textarea_2_reldate_str = prop_meta_reldate
         end
 
         -- For audio files with internal chapters ...
@@ -1407,7 +1507,7 @@ local function on_metadata_change(metadata_key, metadata_val)
                 if str_isnonempty(prop_meta_track)
                 then
                     textarea_2_reldate_metakey_str = "Release Year"
-                    textarea_2_reldate_str = " (" .. prop_meta_track .. ")"
+                    textarea_2_reldate_str = prop_meta_track
                 end
             end
         end
@@ -1427,31 +1527,10 @@ local function on_metadata_change(metadata_key, metadata_val)
         -- could be filled with something useful in the future.
     end
 
-    osd_str = string.gsub(
-        osd_str,
-        ass_tmpl_strid.textarea_2_str,
-        str_isnonempty(textarea_2_str) and
-            str_trunc(textarea_2_str) or "",
-        1)
-
-    osd_str = string.gsub(
-        osd_str,
-        ass_tmpl_strid.textarea_2_reldate_str,
-        str_isnonempty(textarea_2_reldate_str) and
-            str_trunc(textarea_2_reldate_str) or "",
-        1)
-
-    osd_str = string.gsub(
-        osd_str,
-        ass_tmpl_strid.textarea_2_metakey_str,
-        str_isnonempty(textarea_2_metakey_str) and textarea_2_metakey_str or "",
-        1)
-
-    osd_str = string.gsub(
-        osd_str,
-        ass_tmpl_strid.textarea_2_reldate_metakey_str,
-        str_isnonempty(textarea_2_reldate_metakey_str) and textarea_2_reldate_metakey_str or "",
-        1)
+    tmpl_data[ass_tmpl.strid.textarea_2] = textarea_2_str
+    tmpl_data[ass_tmpl.strid.textarea_2_reldate] = textarea_2_reldate_str
+    tmpl_data[ass_tmpl.strid.textarea_2_metakey] = textarea_2_metakey_str
+    tmpl_data[ass_tmpl.strid.textarea_2_reldate_metakey] = textarea_2_reldate_metakey_str
 
     -- ┌─────────────────┐
     -- │ TEXT AREA 3     │
@@ -1493,18 +1572,8 @@ local function on_metadata_change(metadata_key, metadata_val)
         textarea_3_str = mp.get_property_osd("media-title")
     end
 
-    osd_str = string.gsub(
-        osd_str,
-        ass_tmpl_strid.textarea_3_str,
-        str_isnonempty(textarea_3_str) and
-            str_trunc(textarea_3_str) or "",
-        1)
-
-    osd_str = string.gsub(
-        osd_str,
-        ass_tmpl_strid.textarea_3_metakey_str,
-        str_isnonempty(textarea_3_metakey_str) and textarea_3_metakey_str or "",
-        1)
+    tmpl_data[ass_tmpl.strid.textarea_3] = textarea_3_str
+    tmpl_data[ass_tmpl.strid.textarea_3_metakey] = textarea_3_metakey_str
 
     -- ┌─────────────────┐
     -- │ TEXT AREA 4     │
@@ -1595,40 +1664,25 @@ local function on_metadata_change(metadata_key, metadata_val)
         end
     end
 
-    osd_str = string.gsub(
-        osd_str,
-        ass_tmpl_strid.textarea_4_str,
-        str_isnonempty(textarea_4_str) and
-            str_trunc(textarea_4_str) or "",
-        1)
-
-    osd_overlay_osd_1.data = osd_str
+    tmpl_data[ass_tmpl.strid.textarea_4] = textarea_4_str
+    osd_overlay_osd_1.data = tmpl_fill_content(osd_tmpl, tmpl_data)
 
     -- OSD-2
     -- ┌─────────────────┐
     -- │ TEXT AREA 1     │
     -- └─────────────────┘
-    if not ass_tmpl_osd_2 then
+    if not ass_tmpl.osd_2.curr_tmpl then
         return
     end
-    osd_str = ass_tmpl_osd_2
+    osd_tmpl = ass_tmpl.osd_2.curr_tmpl
+    tmpl_data = {}
     textarea_1_metakey_str = "Chapter"
 
     -- meta: Chapter Title
     if options.enable_osd_2 and metadata_key == "chapter-metadata/title" and str_isnonempty(metadata_val) then
-        osd_str =
-            string.gsub(
-                osd_str,
-                ass_tmpl_strid.textarea_1_str,
-                str_trunc(metadata_val),
-                1)
-        osd_str =
-            string.gsub(
-                osd_str,
-                ass_tmpl_strid.textarea_1_metakey_str,
-                str_isnonempty(textarea_1_metakey_str) and textarea_1_metakey_str or "",
-                1)
-        osd_overlay_osd_2.data = osd_str
+        tmpl_data[ass_tmpl.strid.textarea_1] = metadata_val
+        tmpl_data[ass_tmpl.strid.textarea_1_metakey] = textarea_1_metakey_str
+        osd_overlay_osd_2.data = tmpl_fill_content(osd_tmpl, tmpl_data)
     end
 
     if metadata_key == "chapter-metadata/title" and (curr_state == state.SHOWING_OSD_2 or (osd_autohide and curr_state == state.OSD_HIDDEN)) then
@@ -1770,15 +1824,17 @@ local function on_tracklist_change(name, tracklist)
         msg.debug("on_tracklist_change(): current media type: " ..
             curr_mediatype:gsub("^%l", string.upper))
 
-        ass_tmpl_osd_1 = nil
-        ass_tmpl_osd_2 = nil
+        ass_tmpl.osd_1.curr_tmpl = nil
+        ass_tmpl.osd_2.curr_tmpl = nil
 
         for _, mediatype_ in pairs(mediatype)
         do
             if curr_mediatype == mediatype_
             then
-                ass_tmpl_osd_1 = ass_tmpl_osd_1_media[mediatype_]
-                ass_tmpl_osd_2 = ass_tmpl_osd_2_media[mediatype_]
+                ass_tmpl.osd_1.curr_tmpl =
+                    ass_tmpl.osd_1.tokens_media[mediatype_]
+                ass_tmpl.osd_2.curr_tmpl =
+                    ass_tmpl.osd_2.tokens_media[mediatype_]
                 break
             end
         end
