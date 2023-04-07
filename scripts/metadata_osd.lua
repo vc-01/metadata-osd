@@ -40,6 +40,11 @@ local options = {
     -- Enable OSD-2 (with chapter title metadata if present)
     enable_osd_2 = true,
 
+    -- Enable pathname fallback for text area
+    enable_pathname_fallback_textarea_1 = true,
+    enable_pathname_fallback_textarea_2 = true,
+    enable_pathname_fallback_textarea_3 = true,
+
     -- Autohide OSD for tracks
     autohide_for_audio = false,
     autohide_for_audio_withalbumart = false,
@@ -179,8 +184,8 @@ local options = {
     style_fsp_osd_2_textarea_1 = 0,
 
     -- *** UNSTABLE OPTIONS BELOW ***
-    -- Options below are still riping. They might be changed or removed
-    -- in the future without further notice.
+    -- * Options below are still riping. They might be changed or removed
+    -- in the future without further notice. *
 
     -- Global string substitutions for filename / foldername metadata fallback
 
@@ -189,13 +194,14 @@ local options = {
     --   https://www.lua.org/manual/5.1/manual.html#5.4.1
 
     -- Characters after equal sign '=' are not interpreted specially,
-    -- additional equal signs or quotes will be part of the value.
+    -- subsequent equal signs or quotes will be part of the value.
 
     -- For *_repl_* options, value is taken as such as a string replacement.
-    -- Optionally, space character can be entered as '%UNICODE_SP%' to make it
-    -- visible (if it's at the end for example).
+    -- Optionally, space character can be entered as %UNICODE_SP% in case of
+    -- a need to make it visible (e.g. if it's at the end of the string).
 
-    -- Text Area 1: Folder name of the loaded file
+    -- Text Area 1: Folder name one above of the currently loaded media file
+
     -- Empty slot
     gsub_text_area_1_fallback_pattern_1 = "",
     gsub_text_area_1_fallback_repl_1 = "",
@@ -206,7 +212,8 @@ local options = {
     gsub_text_area_1_fallback_pattern_3 = "",
     gsub_text_area_1_fallback_repl_3 = "",
 
-    -- Text Area 2: Folder name one above of the loaded file
+    -- Text Area 2: Folder name of the currently loaded media file
+
     -- Empty slot
     gsub_text_area_2_fallback_pattern_1 = "",
     gsub_text_area_2_fallback_repl_1 = "",
@@ -218,6 +225,7 @@ local options = {
     gsub_text_area_2_fallback_repl_3 = "",
 
     -- Text Area 3: File name without extension
+
     -- Replace underscores with spaces
     gsub_text_area_3_fallback_pattern_1 = "_",
     gsub_text_area_3_fallback_repl_1 = "%UNICODE_SP%",
@@ -228,7 +236,7 @@ local options = {
     gsub_text_area_3_fallback_pattern_3 = "",
     gsub_text_area_3_fallback_repl_3 = "",
 
-    -- Content of each text area for media type
+    -- Text area content for media type
 
     -- Text areas by default contain only the generated content.
 
@@ -861,13 +869,20 @@ local function parse_style_options()
 end
 
 local function prepare_gsubtable()
-    local gsub_textarea_slotmax = { 3, 3, 3 }
+    local gsub_textarea_slotmax = {
+        -- num. of global re substitution slots for textarea 1 in user options
+        options.enable_pathname_fallback_textarea_1 and 3 or 0,
+        -- num. of global re substitution slots for textarea 2 in user options
+        options.enable_pathname_fallback_textarea_2 and 3 or 0,
+        -- num. of global re substitution slots for textarea 3 in user options
+        options.enable_pathname_fallback_textarea_3 and 3 or 0
+    }
 
-    for gsub_textarea_idx, slotmax in ipairs(gsub_textarea_slotmax)
+    for gsub_textarea_idx, gsub_textarea_slotmax in ipairs(gsub_textarea_slotmax)
     do
         gsublist_text_area_fallback[gsub_textarea_idx] = {}
         local gsub_prefix = "gsub_text_area_" .. gsub_textarea_idx
-        for pattern_idx = 1, slotmax
+        for pattern_idx = 1, gsub_textarea_slotmax
         do
             local key = options[gsub_prefix .. "_fallback_pattern_" .. pattern_idx]
             local val = options[gsub_prefix .. "_fallback_repl_" .. pattern_idx]
@@ -1442,7 +1457,8 @@ local function on_metadata_change(metadata_key, metadata_val)
                 textarea_1_str = mp.get_property_osd("metadata/by-key/composer")
 
                 -- Foldername-Artist fallback
-                if str_isempty(textarea_1_str)
+                if options.enable_pathname_fallback_textarea_1
+                    and str_isempty(textarea_1_str)
                 then
                     textarea_1_metakey_str = "Path"
                     local folder_up_up = string.match(prop_abspath, ".*[/\\](.*)[/\\].*[/\\].*")
@@ -1513,7 +1529,8 @@ local function on_metadata_change(metadata_key, metadata_val)
         end
 
         -- Foldername-Album fallback
-        if str_isempty(textarea_2_str)
+        if options.enable_pathname_fallback_textarea_2
+            and str_isempty(textarea_2_str)
         then
             textarea_2_metakey_str = "Path"
             local folder_up = string.match(prop_abspath, ".*[/\\](.*)[/\\].*")
@@ -1557,7 +1574,8 @@ local function on_metadata_change(metadata_key, metadata_val)
         end
 
         -- Filename fallback
-        if str_isempty(textarea_3_str)
+        if options.enable_pathname_fallback_textarea_3
+            and str_isempty(textarea_3_str)
         then
             textarea_3_metakey_str = "File"
             textarea_3_str =
