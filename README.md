@@ -89,31 +89,6 @@ The playlist position if the setting above is active is moved one line below and
 
 For both options, if the chapter / track number is equal to the current playlist position, they're conflated (so they don't show the same information twice). Only for this particular setting, if total playlist items tally to 1, playlist position is omitted and substituted by chapter / track number.
 
-## Program design
+## Program Design & Architecture
 
-Below is the program design documentation (not a necessary read for program use).
-
-### Metadata selection
-
-- If the currently playing file is not a video file and has internal **chapters**, these are preferred and shown on the OSD, otherwise file metadata is selected and shown.
-  
-  - _Rationale_: Implemented to support music files accompanied with a .cue file where each album track is technically a chapter.
-
-- If autohide is enabled and chapter metadata is available, a second OSD (OSD-2) will show up after OSD-1 had been auto-hidden. In the event of a chapter change during playback, only the second OSD (OSD-2) with chapter title will show up.
-  
-  - _Rationale_: Chapter metadata for video files could have been integrated into OSD-1, but displaying the whole dataset repeatedly is disturbing.
-
-- Directory / file name fallback for files with no metadata.
-  
-  - _Rationale_: File name and directory name often carry similar information as the per file-format specific metadata. This approach works for media collections organized as e.g.:
-    - `<Artist>/<Album>/<Song>` or
-    - `<Multimedia_dir>/<Artist - Album>/<Song>`
-  - This can be a topic of further changes.
-
-### Partial Functional UML Diagrams
-
-![State Machine Diagram](StateMachineDiagram.svg)
-
-![Activity Diagram](ActivityDiagram.svg)
-
-<sub>* UML diagrams created with Dia. [http://live.gnome.org/Dia](http://live.gnome.org/Dia)</sup>
+See [ARCHITECTURE.md](ARCHITECTURE.md) (not a necessary read for program use).
