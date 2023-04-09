@@ -28,6 +28,69 @@ local utils = require 'mp.utils'
 
 -- defaults
 local options = {
+    -- OSD-1 layout:
+    -- ┌─────────────────┐
+    -- │ padding top     │
+    -- ├─────────────────┤
+    -- │ TEXT AREA 1     │
+    -- ├─────────────────┤
+    -- │ padding top     │
+    -- ├─────────────────┼─────────────────────┐
+    -- │ TEXT AREA 2     │ TEXT AREA 2 RELDATE │
+    -- ├─────────────────┼─────────────────────┘
+    -- │ padding top     │
+    -- ├─────────────────┤
+    -- │ TEXT AREA 3     │
+    -- ├─────────────────┤
+    -- │ padding top     │
+    -- ├─────────────────┤
+    -- │ TEXT AREA 4     │
+    -- └─────────────────┘
+
+    -- ===================== ========================= ======================
+    --  Layout Element        Filled w/Metadata         (for online content)
+    -- ===================== ========================= ======================
+    --  TEXT AREA 1           Artist                    Uploader
+    --  TEXT AREA 2           Album                     < empty >
+    --  TEXT AREA 2 RELDATE   Release Year              < empty >
+    --  TEXT AREA 3           Title                     Media Title
+    --  TEXT AREA 4           Playlist Position /       <--
+    --                        Playlist Count
+    -- ===================== ========================= ======================
+
+    -- ===================== =========================
+    --  Layout Element        Path-name Fallback
+    -- ===================== =========================
+    --  TEXT AREA 1           Folder name (one above)
+    --  TEXT AREA 2           Folder name
+    --  TEXT AREA 2 RELDATE   <not applied>
+    --  TEXT AREA 3           File name
+    --  TEXT AREA 4           <not applied>
+    -- ===================== =========================
+
+    -- ===================== =========================
+    --  Layout Element        Content Variable
+    -- ===================== =========================
+    --  TEXT AREA 1           TEXTAREA_1_GEN
+    --  TEXT AREA 2           TEXTAREA_2_GEN
+    --  TEXT AREA 2 RELDATE   TEXTAREA_2_RELDATE_GEN
+    --  TEXT AREA 3           TEXTAREA_3_GEN
+    --  TEXT AREA 4           TEXTAREA_4_GEN
+    -- ===================== =========================
+
+    -- OSD-2 layout:
+    -- ┌─────────────────┐
+    -- │ padding top     │
+    -- ├─────────────────┤
+    -- │ TEXT AREA 1     │
+    -- └─────────────────┘
+
+    --  ================= ====================== ==================
+    --   Layout Element    Filled w/Metadata      Content Variable
+    --  ================= ====================== ==================
+    --   TEXT AREA 1       Chapter Title          TEXTAREA_1_GEN
+    --  ================= ====================== ==================
+
     -- Enable OSD on mpv startup
     enable_on_start = true,
 
@@ -96,32 +159,6 @@ local options = {
     -- Maximum OSD message length
     --    - OSD messages will be trimmed after specified (character) length
     osd_message_maxlength = 96,
-
-    -- OSD-1 layout:
-    -- ┌─────────────────┐
-    -- │ padding top     │
-    -- ├─────────────────┤
-    -- │ TEXT AREA 1     │
-    -- ├─────────────────┤
-    -- │ padding top     │
-    -- ├─────────────────┤
-    -- │ TEXT AREA 2     │
-    -- ├─────────────────┤
-    -- │ padding top     │
-    -- ├─────────────────┤
-    -- │ TEXT AREA 3     │
-    -- ├─────────────────┤
-    -- │ padding top     │
-    -- ├─────────────────┤
-    -- │ TEXT AREA 4     │
-    -- └─────────────────┘
-
-    -- OSD-2 layout:
-    -- ┌─────────────────┐
-    -- │ padding top     │
-    -- ├─────────────────┤
-    -- │ TEXT AREA 1     │
-    -- └─────────────────┘
 
     -- Styling options
 
