@@ -118,7 +118,7 @@ local options = {
     autohide_timeout_sec = 5,
     autohide_statusosd_timeout_sec = 5,
 
-    -- Key bindings
+    -- * Key bindings *
 
     -- Master enable / disable key (killswitch)
     key_toggleenable = 'F1',
@@ -144,23 +144,56 @@ local options = {
     --   - displays OSD and autohide state (enabled / disabled)
     key_showstatusosd = '',
 
-    -- Show current chapter number in addition to current playlist position
-    --   Can be useful also for audio files with internal chapters having a song
+    -- * Current Chapter Number *
+
+    -- Show current chapter number in addition to the current playlist position.
+    --   Can be useful (also) for audio files with internal chapters carrying a song
     --   per chapter.
+
+    -- Current playlist position if the setting is activated (see below)
+    --   is moved one line down and put between square brackets.
+    -- E.g.:
+    --   Chapter: 4/16
+    --   [1/5]            <-- playlist position
+
+    -- If the chapter number is equal to the current playlist position, the value
+    --   is conflated with playlist position (to avoid duplicity).
+    -- ^ Applied only if not equal to the current playlist position.
+
+    -- If playlist items tally to 1, playlist position is omitted instead
+    --   and substituted for chapter number.
+
     show_chapternumber = false,
 
-    -- Show album's current track number (if not equal to current playlist
-    -- position)
-    --   Playlists can be long, traversing multiple directories;
-    --   This will show the album's current track number in addition
-    --   to the (encompassing) playlist position (if present in metadata).
+    -- * Current Album Track Number *
+
+    -- Show current album track number in addition to the (encompassing) playlist
+    -- position (if present in metadata).
+    --   Can be useful if the playlist traverses multiple directories.
+
+    -- Current playlist position if the setting is activated (see below)
+    --   is moved one line down and put between square brackets.
+    -- E.g.:
+    --   Track: 3
+    --   [4/26]            <-- playlist position
+
+    -- If the track number is equal to the current playlist position, the value
+    --   is conflated with playlist position (to avoid duplicity).
+    -- ^ Applied only if not equal to the current playlist position.
+
+    -- If playlist items tally to 1, playlist position is omitted instead
+    --   and substituted for album track number.
+
+    -- _Note_: Album track number is scarcely present in metadata,
+    --   this can give mixed results.
+
     show_albumtracknumber = false,
 
     -- Maximum OSD message length
-    --    - OSD messages will be trimmed after specified (character) length
+    --   OSD messages will be trimmed after the specified (character) length.
     osd_message_maxlength = 96,
 
-    -- Styling options
+    -- * Styling options *
 
     -- Style: Padding top (in number of half-lines)
     -- Allowed values are integers in range:
@@ -224,7 +257,39 @@ local options = {
     -- * Options below are still riping. They might be changed or removed
     -- in the future without further notice. *
 
-    -- Global string substitutions for filename / foldername metadata fallback
+    -- * Text area content for media type *
+
+    -- Text areas by default contain only the generated content.
+
+    content_osd_1_textarea_1_audio = "##TEXTAREA_1_GEN##",
+    content_osd_1_textarea_2_audio = "##TEXTAREA_2_GEN##",
+    content_osd_1_textarea_2_reldate_audio = "{#?TEXTAREA_2_RELDATE_GEN} (##TEXTAREA_2_RELDATE_GEN##){#/}",
+    content_osd_1_textarea_3_audio = "##TEXTAREA_3_GEN##",
+    content_osd_1_textarea_4_audio = "##TEXTAREA_4_GEN##",
+    content_osd_2_textarea_1_audio = "##TEXTAREA_1_GEN##",
+
+    content_osd_1_textarea_1_audio_withalbumart = "##TEXTAREA_1_GEN##",
+    content_osd_1_textarea_2_audio_withalbumart = "##TEXTAREA_2_GEN##",
+    content_osd_1_textarea_2_reldate_audio_withalbumart = "{#?TEXTAREA_2_RELDATE_GEN} (##TEXTAREA_2_RELDATE_GEN##){#/}",
+    content_osd_1_textarea_3_audio_withalbumart = "##TEXTAREA_3_GEN##",
+    content_osd_1_textarea_4_audio_withalbumart = "##TEXTAREA_4_GEN##",
+    content_osd_2_textarea_1_audio_withalbumart = "##TEXTAREA_1_GEN##",
+
+    content_osd_1_textarea_1_video = "##TEXTAREA_1_GEN##",
+    content_osd_1_textarea_2_video = "##TEXTAREA_2_GEN##",
+    content_osd_1_textarea_2_reldate_video = "{#?TEXTAREA_2_RELDATE_GEN} (##TEXTAREA_2_RELDATE_GEN##){#/}",
+    content_osd_1_textarea_3_video = "##TEXTAREA_3_GEN##",
+    content_osd_1_textarea_4_video = "##TEXTAREA_4_GEN##",
+    content_osd_2_textarea_1_video = "##TEXTAREA_1_GEN##",
+
+    content_osd_1_textarea_1_image = "##TEXTAREA_1_GEN##",
+    content_osd_1_textarea_2_image = "##TEXTAREA_2_GEN##",
+    content_osd_1_textarea_2_reldate_image = "{#?TEXTAREA_2_RELDATE_GEN} (##TEXTAREA_2_RELDATE_GEN##){#/}",
+    content_osd_1_textarea_3_image = "##TEXTAREA_3_GEN##",
+    content_osd_1_textarea_4_image = "##TEXTAREA_4_GEN##",
+    content_osd_2_textarea_1_image = "##TEXTAREA_1_GEN##",
+
+    -- * Global string substitutions for filename / foldername metadata fallback *
 
     -- For *_pattern_* options, so called "patterns" apply as documented in Lua
     -- documentation:
@@ -272,38 +337,6 @@ local options = {
     -- Empty slot
     gsub_text_area_3_fallback_pattern_3 = "",
     gsub_text_area_3_fallback_repl_3 = "",
-
-    -- Text area content for media type
-
-    -- Text areas by default contain only the generated content.
-
-    content_osd_1_textarea_1_audio = "##TEXTAREA_1_GEN##",
-    content_osd_1_textarea_2_audio = "##TEXTAREA_2_GEN##",
-    content_osd_1_textarea_2_reldate_audio = "{#?TEXTAREA_2_RELDATE_GEN} (##TEXTAREA_2_RELDATE_GEN##){#/}",
-    content_osd_1_textarea_3_audio = "##TEXTAREA_3_GEN##",
-    content_osd_1_textarea_4_audio = "##TEXTAREA_4_GEN##",
-    content_osd_2_textarea_1_audio = "##TEXTAREA_1_GEN##",
-
-    content_osd_1_textarea_1_audio_withalbumart = "##TEXTAREA_1_GEN##",
-    content_osd_1_textarea_2_audio_withalbumart = "##TEXTAREA_2_GEN##",
-    content_osd_1_textarea_2_reldate_audio_withalbumart = "{#?TEXTAREA_2_RELDATE_GEN} (##TEXTAREA_2_RELDATE_GEN##){#/}",
-    content_osd_1_textarea_3_audio_withalbumart = "##TEXTAREA_3_GEN##",
-    content_osd_1_textarea_4_audio_withalbumart = "##TEXTAREA_4_GEN##",
-    content_osd_2_textarea_1_audio_withalbumart = "##TEXTAREA_1_GEN##",
-
-    content_osd_1_textarea_1_video = "##TEXTAREA_1_GEN##",
-    content_osd_1_textarea_2_video = "##TEXTAREA_2_GEN##",
-    content_osd_1_textarea_2_reldate_video = "{#?TEXTAREA_2_RELDATE_GEN} (##TEXTAREA_2_RELDATE_GEN##){#/}",
-    content_osd_1_textarea_3_video = "##TEXTAREA_3_GEN##",
-    content_osd_1_textarea_4_video = "##TEXTAREA_4_GEN##",
-    content_osd_2_textarea_1_video = "##TEXTAREA_1_GEN##",
-
-    content_osd_1_textarea_1_image = "##TEXTAREA_1_GEN##",
-    content_osd_1_textarea_2_image = "##TEXTAREA_2_GEN##",
-    content_osd_1_textarea_2_reldate_image = "{#?TEXTAREA_2_RELDATE_GEN} (##TEXTAREA_2_RELDATE_GEN##){#/}",
-    content_osd_1_textarea_3_image = "##TEXTAREA_3_GEN##",
-    content_osd_1_textarea_4_image = "##TEXTAREA_4_GEN##",
-    content_osd_2_textarea_1_image = "##TEXTAREA_1_GEN##",
 }
 
 opt.read_options(options)

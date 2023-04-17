@@ -1,6 +1,6 @@
-# Metadata OSD script for mpv player
+# metadata-osd
 
-This script adds metadata OSD (on-screen display) to mpv.
+Metadata OSD script for mpv player. Adds metadata OSD (on-screen display) to mpv.
 
 ![Screenshot](sshots/sshot_osd_1.png)
 
@@ -65,30 +65,10 @@ If user presses a button to toggle enable / disable the OSD or the autohide feat
 
 * _key_reset_usertoggled_ / _reset_usertoggled_ (F6) (see [above](#key-bindings))
 
-## Current Chapter & Track Number
+## Program Architecture
 
-Current chapter number (disabled by default) can be enabled by configuration setting:
+See [ARCHITECTURE.md](ARCHITECTURE.md).
 
-`show_chapternumber=yes`
+## License
 
-See example screenshot below:
-
-![Chapter Number](sshots/sshot_chapternumber.png)
-
-Same goes for album track number (disabled by default):
-
-`show_albumtracknumber=yes`
-
-See example screenshot below:
-
-![Album Track Number](sshots/sshot_albumtracknumber.png)
-
-_Note_: Album track number is scarcely present in metadata, this can give mixed results.
-
-Current playlist position if the setting above is activated is moved one line down and put between square brackets.
-
-For both options, if the chapter and/or track number is equal to the current playlist position, the values are conflated (to avoid duplicity). Only for this particular setting, if playlist items tally to *1*, playlist position is omitted and substituted for chapter and/or track number.
-
-## Program Design & Architecture
-
-See [ARCHITECTURE.md](ARCHITECTURE.md) (not a necessary read for program use).
+This project is licensed under the terms of the **MIT license**. See [LICENSE](LICENSE).
