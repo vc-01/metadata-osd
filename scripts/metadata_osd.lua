@@ -28,6 +28,63 @@ local utils = require 'mp.utils'
 
 -- defaults
 local options = {
+    -- Enable OSD on mpv startup
+    enable_on_start = true,
+
+    -- Enable OSD for tracks
+    enable_for_audio = true,
+    enable_for_audio_withalbumart = true,
+    enable_for_video = true,
+    enable_for_image = false,
+
+    -- Enable OSD-2 (with chapter title metadata if present)
+    enable_osd_2 = true,
+
+    -- Enable pathname fallback for text area
+    enable_pathname_fallback_textarea_1 = true,
+    enable_pathname_fallback_textarea_2 = true,
+    enable_pathname_fallback_textarea_3 = true,
+
+    -- Autohide OSD for tracks
+    autohide_for_audio = false,
+    autohide_for_audio_withalbumart = false,
+    autohide_for_video = true,
+    autohide_for_image = true,
+
+    -- Autohide delay in seconds
+    autohide_timeout_sec = 5,
+    autohide_statusosd_timeout_sec = 5,
+
+    -- Key bindings
+
+    -- Master enable / disable key (killswitch)
+    key_toggleenable = 'F1',
+
+    -- Key to enable / disable the OSD autohide feature
+    key_toggleautohide = 'F5',
+
+    -- Key to show / hide OSD-1
+    --   - current autohide state applies so if autohide is enabled, OSD will hide again
+    --     after the specified delay
+    key_toggleosd_1 = '',
+
+    -- Key to show / hide OSD-2 (with chapter title metadata if present)
+    --   - current autohide state applies (see above)
+    --   - OSD-2 needs to be enabled by 'enable_osd_2' config option
+    --   - OSD-2 needs to have some data
+    key_toggleosd_2 = '',
+
+    -- Reset any user-toggled switches
+    key_reset_usertoggled = 'F6',
+
+    -- Key to show status OSD
+    --   - displays OSD and autohide state (enabled / disabled)
+    key_showstatusosd = '',
+
+    -- Maximum OSD message length
+    --   OSD messages will be trimmed after the specified (character) length.
+    osd_message_maxlength = 96,
+
     -- OSD-1 layout:
     -- ┌─────────────────┐
     -- │ padding top     │
@@ -61,15 +118,15 @@ local options = {
     -- ===================== =========================
     --  Layout Element        Path-name Fallback
     -- ===================== =========================
-    --  TEXT AREA 1           Folder name (one above)
-    --  TEXT AREA 2           Folder name
+    --  TEXT AREA 1           Directory name (one above)
+    --  TEXT AREA 2           Directory name
     --  TEXT AREA 2 RELDATE   <not applied>
     --  TEXT AREA 3           File name
     --  TEXT AREA 4           <not applied>
     -- ===================== =========================
 
     -- ===================== =========================
-    --  Layout Element        Content Variable
+    --  Layout Element        Template Variable
     -- ===================== =========================
     --  TEXT AREA 1           TEXTAREA_1_GEN
     --  TEXT AREA 2           TEXTAREA_2_GEN
@@ -85,115 +142,19 @@ local options = {
     -- │ TEXT AREA 1     │
     -- └─────────────────┘
 
-    --  ================= ====================== ==================
-    --   Layout Element    Filled w/Metadata      Content Variable
-    --  ================= ====================== ==================
-    --   TEXT AREA 1       Chapter Title          TEXTAREA_1_GEN
-    --  ================= ====================== ==================
+    --  ================= ======================
+    --   Layout Element    Filled w/Metadata
+    --  ================= ======================
+    --   TEXT AREA 1       Chapter Title
+    --  ================= ======================
 
-    -- Enable OSD on mpv startup
-    enable_on_start = true,
+    --  ================= ==================
+    --   Layout Element    Template Variable
+    --  ================= ==================
+    --   TEXT AREA 1       TEXTAREA_1_GEN
+    --  ================= ==================
 
-    -- Enable OSD for tracks
-    enable_for_audio = true,
-    enable_for_audio_withalbumart = true,
-    enable_for_video = true,
-    enable_for_image = false,
-
-    -- Enable OSD-2 (with chapter title metadata if present)
-    enable_osd_2 = true,
-
-    -- Enable pathname fallback for text area
-    enable_pathname_fallback_textarea_1 = true,
-    enable_pathname_fallback_textarea_2 = true,
-    enable_pathname_fallback_textarea_3 = true,
-
-    -- Autohide OSD for tracks
-    autohide_for_audio = false,
-    autohide_for_audio_withalbumart = false,
-    autohide_for_video = true,
-    autohide_for_image = true,
-
-    -- Autohide delay in seconds
-    autohide_timeout_sec = 5,
-    autohide_statusosd_timeout_sec = 5,
-
-    -- * Key bindings *
-
-    -- Master enable / disable key (killswitch)
-    key_toggleenable = 'F1',
-
-    -- Key to enable / disable the OSD autohide feature
-    key_toggleautohide = 'F5',
-
-    -- Key to show / hide OSD-1
-    --   - current autohide state applies so if autohide is enabled, OSD will hide again
-    --     after the specified delay
-    key_toggleosd_1 = '',
-
-    -- Key to show / hide OSD-2 (with chapter title metadata if present)
-    --   - current autohide state applies (see above)
-    --   - OSD-2 needs to be enabled by 'enable_osd_2' config option
-    --   - OSD-2 needs to have some data
-    key_toggleosd_2 = '',
-
-    -- Reset any user-toggled switches
-    key_reset_usertoggled = 'F6',
-
-    -- Key to show status OSD
-    --   - displays OSD and autohide state (enabled / disabled)
-    key_showstatusosd = '',
-
-    -- * Current Chapter Number *
-
-    -- Show current chapter number in addition to the current playlist position.
-    --   Can be useful (also) for audio files with internal chapters carrying a song
-    --   per chapter.
-
-    -- Current playlist position if the setting is activated (see below)
-    --   is moved one line down and put between square brackets.
-    -- E.g.:
-    --   Chapter: 4/16
-    --   [1/5]            <-- playlist position
-
-    -- If the chapter number is equal to the current playlist position, the value
-    --   is conflated with playlist position (to avoid duplicity).
-    -- ^ Applied only if not equal to the current playlist position.
-
-    -- If playlist items tally to 1, playlist position is omitted instead
-    --   and substituted for chapter number.
-
-    show_chapternumber = false,
-
-    -- * Current Album Track Number *
-
-    -- Show current album track number in addition to the (encompassing) playlist
-    -- position (if present in metadata).
-    --   Can be useful if the playlist traverses multiple directories.
-
-    -- Current playlist position if the setting is activated (see below)
-    --   is moved one line down and put between square brackets.
-    -- E.g.:
-    --   Track: 3
-    --   [4/26]            <-- playlist position
-
-    -- If the track number is equal to the current playlist position, the value
-    --   is conflated with playlist position (to avoid duplicity).
-    -- ^ Applied only if not equal to the current playlist position.
-
-    -- If playlist items tally to 1, playlist position is omitted instead
-    --   and substituted for album track number.
-
-    -- _Note_: Album track number is scarcely present in metadata,
-    --   this can give mixed results.
-
-    show_albumtracknumber = false,
-
-    -- Maximum OSD message length
-    --   OSD messages will be trimmed after the specified (character) length.
-    osd_message_maxlength = 96,
-
-    -- * Styling options *
+    -- Styling options
 
     -- Style: Padding top (in number of half-lines)
     -- Allowed values are integers in range:
@@ -253,43 +214,88 @@ local options = {
     style_fsp_osd_1_textarea_4 = 0,
     style_fsp_osd_2_textarea_1 = 0,
 
+    -- Current Chapter Number
+
+    -- Show current chapter number in addition to the current playlist position.
+    --   Can be useful (also) for audio files with internal chapters carrying a song
+    --   per chapter.
+
+    -- Current playlist position if the setting is activated (see below)
+    --   is moved one line down and put between square brackets.
+    -- E.g.:
+    --   Chapter: 4/16
+    --   [1/5]            <-- playlist position
+
+    -- If the chapter number is equal to the current playlist position, the value
+    --   is conflated with playlist position (to avoid duplicity).
+    -- ^ (reworded) Applied only if not equal to the current playlist position.
+
+    -- If playlist consists of exactly one media, playlist position is omitted
+    -- instead and substituted for chapter number.
+
+    show_chapternumber = false,
+
+    -- Current Album Track Number
+
+    -- Show current album track number in addition to the (encompassing) playlist
+    -- position (if present in metadata).
+    --   Can be useful if the playlist traverses multiple directories.
+
+    -- Current playlist position if the setting is activated (see below)
+    --   is moved one line down and put between square brackets.
+    -- E.g.:
+    --   Track: 3
+    --   [4/26]            <-- playlist position
+
+    -- If the track number is equal to the current playlist position, the value
+    --   is conflated with playlist position (to avoid duplicity).
+    -- ^ (reworded) Applied only if not equal to the current playlist position.
+
+    -- If playlist consists of exactly one media, playlist position is omitted
+    -- instead and substituted for album track number.
+
+    -- _Note_: Album track number is scarcely present in metadata,
+    --   this can give mixed results.
+
+    show_albumtracknumber = false,
+
     -- *** UNSTABLE OPTIONS BELOW ***
     -- * Options below are still riping. They might be changed or removed
     -- in the future without further notice. *
 
-    -- * Text area content for media type *
+    -- Text area content for media type
 
     -- Text areas by default contain only the generated content.
 
     content_osd_1_textarea_1_audio = "##TEXTAREA_1_GEN##",
     content_osd_1_textarea_2_audio = "##TEXTAREA_2_GEN##",
-    content_osd_1_textarea_2_reldate_audio = "{#?TEXTAREA_2_RELDATE_GEN} (##TEXTAREA_2_RELDATE_GEN##){#/}",
+    content_osd_1_textarea_2_reldate_audio = "{{#?TEXTAREA_2_RELDATE_GEN}}{{UNICODE_SP}}(##TEXTAREA_2_RELDATE_GEN##){{#/}}",
     content_osd_1_textarea_3_audio = "##TEXTAREA_3_GEN##",
     content_osd_1_textarea_4_audio = "##TEXTAREA_4_GEN##",
     content_osd_2_textarea_1_audio = "##TEXTAREA_1_GEN##",
 
     content_osd_1_textarea_1_audio_withalbumart = "##TEXTAREA_1_GEN##",
     content_osd_1_textarea_2_audio_withalbumart = "##TEXTAREA_2_GEN##",
-    content_osd_1_textarea_2_reldate_audio_withalbumart = "{#?TEXTAREA_2_RELDATE_GEN} (##TEXTAREA_2_RELDATE_GEN##){#/}",
+    content_osd_1_textarea_2_reldate_audio_withalbumart = "{{#?TEXTAREA_2_RELDATE_GEN}}{{UNICODE_SP}}(##TEXTAREA_2_RELDATE_GEN##){{#/}}",
     content_osd_1_textarea_3_audio_withalbumart = "##TEXTAREA_3_GEN##",
     content_osd_1_textarea_4_audio_withalbumart = "##TEXTAREA_4_GEN##",
     content_osd_2_textarea_1_audio_withalbumart = "##TEXTAREA_1_GEN##",
 
     content_osd_1_textarea_1_video = "##TEXTAREA_1_GEN##",
     content_osd_1_textarea_2_video = "##TEXTAREA_2_GEN##",
-    content_osd_1_textarea_2_reldate_video = "{#?TEXTAREA_2_RELDATE_GEN} (##TEXTAREA_2_RELDATE_GEN##){#/}",
+    content_osd_1_textarea_2_reldate_video = "{{#?TEXTAREA_2_RELDATE_GEN}}{{UNICODE_SP}}(##TEXTAREA_2_RELDATE_GEN##){{#/}}",
     content_osd_1_textarea_3_video = "##TEXTAREA_3_GEN##",
     content_osd_1_textarea_4_video = "##TEXTAREA_4_GEN##",
     content_osd_2_textarea_1_video = "##TEXTAREA_1_GEN##",
 
     content_osd_1_textarea_1_image = "##TEXTAREA_1_GEN##",
     content_osd_1_textarea_2_image = "##TEXTAREA_2_GEN##",
-    content_osd_1_textarea_2_reldate_image = "{#?TEXTAREA_2_RELDATE_GEN} (##TEXTAREA_2_RELDATE_GEN##){#/}",
+    content_osd_1_textarea_2_reldate_image = "{{#?TEXTAREA_2_RELDATE_GEN}}{{UNICODE_SP}}(##TEXTAREA_2_RELDATE_GEN##){{#/}}",
     content_osd_1_textarea_3_image = "##TEXTAREA_3_GEN##",
     content_osd_1_textarea_4_image = "##TEXTAREA_4_GEN##",
     content_osd_2_textarea_1_image = "##TEXTAREA_1_GEN##",
 
-    -- * Global string substitutions for filename / foldername metadata fallback *
+    -- Global string substitutions for filename / foldername metadata fallback
 
     -- For *_pattern_* options, so called "patterns" apply as documented in Lua
     -- documentation:
@@ -1016,6 +1022,13 @@ local ass_tmpl = {
         textarea_2_reldate = "TEXTAREA_2_RELDATE_GEN",
         textarea_3 = "TEXTAREA_3_GEN",
         textarea_4 = "TEXTAREA_4_GEN",
+
+        playlist_pos = "PLAYLIST_POS",
+        playlist_count = "PLAYLIST_COUNT",
+        chapter_curr = "CHAPTER_CURR",
+        chapter_count = "CHAPTER_COUNT",
+        albumtrack = "ALBUMTRACK",
+
         textarea_1_metakey = "TEXTAREA_1_METAKEY",
         textarea_2_metakey = "TEXTAREA_2_METAKEY",
         textarea_2_reldate_metakey = "TEXTAREA_2_RELDATE_METAKEY",
@@ -1071,18 +1084,6 @@ local function ass_prepare_template_textarea(ass_style_textarea, content_textare
     if type(ass_style_textarea) == "table" and
         str_isnonempty(content_textarea)
     then
-        content_textarea = -- escape ASS/SSA style override code mark '{'
-            string.gsub(
-                content_textarea,
-                "{",
-                "\\{")
-
-        content_textarea = -- replace %UNICODE_SP% with space character
-            string.gsub(
-                content_textarea,
-                "%%UNICODE_SP%%",
-                " ")
-
         res =
             ass_style_textarea.shad ..
             ass_style_textarea.fsc ..
@@ -1102,6 +1103,8 @@ local function ass_prepare_template_textarea(ass_style_textarea, content_textare
 end
 
 local function ass_prepare_templates()
+    -- sharing ASS/SSA style override code mark '{' in our templates
+
     local ass_style =
         parse_style_options()
 
@@ -1161,6 +1164,12 @@ local function ass_prepare_templates()
                     "{{ASS_NEWLINE}}",
                     ass_newline())
 
+            ass_tmpl_osd_1 = -- replace {{UNICODE_SP}} with space character
+                string.gsub(
+                    ass_tmpl_osd_1,
+                    "{{UNICODE_SP}}",
+                    " ")
+
             local ass_tmpl_osd_2 =
                 ass_style.osd_2.alignment ..
                 ass_style.osd_2.bord ..
@@ -1175,6 +1184,12 @@ local function ass_prepare_templates()
                     ass_tmpl_osd_2,
                     "{{ASS_NEWLINE}}",
                     ass_newline())
+
+            ass_tmpl_osd_2 = -- replace {{UNICODE_SP}} with space character
+                string.gsub(
+                    ass_tmpl_osd_2,
+                    "{{UNICODE_SP}}",
+                    " ")
 
             ass_tmpl_media.osd_1[mediatype_] = ass_tmpl_osd_1
             ass_tmpl_media.osd_2[mediatype_] = ass_tmpl_osd_2
@@ -1212,7 +1227,7 @@ local function ass_prepare_templates()
                         idx_section_end,
                         section_name,
                         section_text =
-                            string.find(tmpl, "\\{#[?](.-)}(.-)\\{#/}", curr_pos)
+                            string.find(tmpl, "{{#[?](.-)}}(.-){{#/}}", curr_pos)
 
                     if idx_section_start and idx_section_end
                         and section_name and section_text
@@ -1675,6 +1690,11 @@ local function on_metadata_change(metadata_key, metadata_val)
             "/" ..
             tostring(prop_playlist_total)
 
+        tmpl_data[ass_tmpl.strid.playlist_pos] =
+            tostring(prop_playlist_curr)
+        tmpl_data[ass_tmpl.strid.playlist_count] =
+            tostring(prop_playlist_total)
+
         -- For files with internal chapters ...
         -- meta: Chapter Number
         if prop_chapter_curr and
@@ -1684,7 +1704,9 @@ local function on_metadata_change(metadata_key, metadata_val)
             then
                 local chapternum_str = ""
 
-                if curr_mediatype == mediatype.VIDEO
+                if not ((curr_mediatype == mediatype.AUDIO or
+                   curr_mediatype == mediatype.AUDIO_WITHALBUMART) and
+                   prop_playlist_total == 1)
                 then
                     chapternum_str = "Chapter: "
                 end
@@ -1694,6 +1716,11 @@ local function on_metadata_change(metadata_key, metadata_val)
                     tostring(prop_chapter_curr + 1) ..
                     "/" ..
                     tostring(prop_chapters_total)
+
+                    tmpl_data[ass_tmpl.strid.chapter_curr] =
+                        tostring(prop_chapter_curr + 1)
+                    tmpl_data[ass_tmpl.strid.chapter_count] =
+                        tostring(prop_chapters_total)
 
                 if prop_playlist_total ~= 1 and
                     ( prop_chapter_curr ~= prop_playlist_curr or
@@ -1726,6 +1753,9 @@ local function on_metadata_change(metadata_key, metadata_val)
                 then
                     local tracknum_str = ""
 
+                    tmpl_data[ass_tmpl.strid.albumtrack] =
+                        tostring(tracknum)
+
                     if prop_playlist_total == 1
                     then
                         tracknum_str =
@@ -1753,6 +1783,7 @@ local function on_metadata_change(metadata_key, metadata_val)
     end
 
     tmpl_data[ass_tmpl.strid.textarea_4] = textarea_4_str
+
     osd_overlay_osd_1.data = tmpl_fill_content(osd_tmpl, tmpl_data)
 
     -- OSD-2
