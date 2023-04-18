@@ -1,4 +1,4 @@
-# metadata-osd
+# Metadata OSD script for mpv player
 
 ## Program Design
 

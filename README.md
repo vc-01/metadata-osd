@@ -1,8 +1,12 @@
-# metadata-osd
+# Metadata OSD script for mpv player
 
-Metadata OSD script for mpv player. Adds metadata OSD (on-screen display) to mpv.
+This script adds metadata OSD (on-screen display) to mpv.
 
-![Screenshot](sshots/sshot_osd_1.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="sshots/sshot_osd_1_dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="sshots/sshot_osd_1_light.png">
+  <img alt="OSD-1 Screenshot" src="sshots/sshot_osd_1_light.png">
+</picture>
 
 <sub>* Screenshot taken on a packaged mpv on Arch Linux; font type and size may vary on other platforms.</sub>
 
