@@ -4,7 +4,7 @@ metadata-osd-0.5.4 / 2023-03-23
 
 metadata-osd-0.5.3 / 2023-03-09
 ===============================
- * fix: Parse paths with backslashes for foldername fallback
+ * fix: Parse paths with backslashes for pathname fallback
 
 metadata-osd-0.5.2 / 2023-03-07
 ===============================

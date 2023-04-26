@@ -40,10 +40,10 @@ local options = {
     -- Enable OSD-2 (with chapter title metadata if present)
     enable_osd_2 = true,
 
-    -- Enable pathname fallback for text area
-    enable_pathname_fallback_textarea_1 = true,
-    enable_pathname_fallback_textarea_2 = true,
-    enable_pathname_fallback_textarea_3 = true,
+    -- Enable pathname fallback
+    enable_pathname_fallback_dirname_up = true,
+    enable_pathname_fallback_dirname = true,
+    enable_pathname_fallback_filename = true,
 
     -- Autohide OSD for tracks
     autohide_for_audio = false,
@@ -107,8 +107,8 @@ local options = {
     -- ===================== ========================= ======================
     --  Layout Element        Filled w/Metadata         (for online content)
     -- ===================== ========================= ======================
-    --  TEXT AREA 1           Artist                    Uploader
-    --  TEXT AREA 2           Album                     < empty >
+    --  TEXT AREA 1           Artist                    < empty >
+    --  TEXT AREA 2           Album                     Uploader
     --  TEXT AREA 2 RELDATE   Release Year              < empty >
     --  TEXT AREA 3           Title                     Media Title
     --  TEXT AREA 4           Playlist Position /       <--
@@ -125,16 +125,6 @@ local options = {
     --  TEXT AREA 4           <not applied>
     -- ===================== =========================
 
-    -- ===================== =========================
-    --  Layout Element        Template Variable
-    -- ===================== =========================
-    --  TEXT AREA 1           TEXTAREA_1_GEN
-    --  TEXT AREA 2           TEXTAREA_2_GEN
-    --  TEXT AREA 2 RELDATE   TEXTAREA_2_RELDATE_GEN
-    --  TEXT AREA 3           TEXTAREA_3_GEN
-    --  TEXT AREA 4           TEXTAREA_4_GEN
-    -- ===================== =========================
-
     -- OSD-2 layout:
     -- ┌─────────────────┐
     -- │ padding top     │
@@ -147,12 +137,6 @@ local options = {
     --  ================= ======================
     --   TEXT AREA 1       Chapter Title
     --  ================= ======================
-
-    --  ================= ==================
-    --   Layout Element    Template Variable
-    --  ================= ==================
-    --   TEXT AREA 1       TEXTAREA_1_GEN
-    --  ================= ==================
 
     -- Styling options
 
@@ -263,39 +247,60 @@ local options = {
     -- * Options below are still riping. They might be changed or removed
     -- in the future without further notice. *
 
+    -- OSD layout
+
+    tmpl_layout_osd_1 = "{{CONTENT_TEXTAREA_1_MEDIA}}{{NEWLINE}}{{CONTENT_TEXTAREA_2_MEDIA}}{{CONTENT_TEXTAREA_2_RELDATE_MEDIA}}{{NEWLINE}}{{CONTENT_TEXTAREA_3_MEDIA}}{{NEWLINE}}{{CONTENT_TEXTAREA_4_MEDIA}}",
+
+    tmpl_layout_osd_2 = "{{CONTENT_TEXTAREA_1_MEDIA}}",
+
     -- Text area content for media type
 
-    -- Text areas by default contain only the generated content.
+    -- _Note_: Templating syntax is as yet _unstable_,
+    --         it can change in the future.
 
-    content_osd_1_textarea_1_audio = "##TEXTAREA_1_GEN##",
-    content_osd_1_textarea_2_audio = "##TEXTAREA_2_GEN##",
-    content_osd_1_textarea_2_reldate_audio = "{{#?TEXTAREA_2_RELDATE_GEN}}{{UNICODE_SP}}(##TEXTAREA_2_RELDATE_GEN##){{#/}}",
-    content_osd_1_textarea_3_audio = "##TEXTAREA_3_GEN##",
+    -- Tag expansion:
+    --   Expand variable with name VAR:
+    --     ##VAR##
+    --   Conditionally include if value of VAR is a non zero length string:
+    --     {{#|VAR}}TEMPLATE_TEXT{{#/}}
+    --   The above works also as logical OR, so multiple condidions are possible:
+    --     {{#|VAR_1}}TEMPLATE_TEXT_1{{#|VAR_2}}TEMPLATE_TEXT_2{{#/}}
+
+    content_osd_1_textarea_1_audio = "{{#|ARTIST}}##ARTIST##{{#|DIRNAME_UP}}##DIRNAME_UP##{{#/}}",
+    content_osd_1_textarea_2_audio = "{{#|ALBUM}}##ALBUM##{{#|DIRNAME}}##DIRNAME##{{#/}}",
+    content_osd_1_textarea_2_reldate_audio = "{{#|RELEASE_YEAR}}{{UNICODE_SP}}(##RELEASE_YEAR##){{#/}}",
+    content_osd_1_textarea_3_audio = "{{#|TITLE}}##TITLE##{{#|FILENAME}}##FILENAME##{{#/}}",
     content_osd_1_textarea_4_audio = "##TEXTAREA_4_GEN##",
-    content_osd_2_textarea_1_audio = "##TEXTAREA_1_GEN##",
+    content_osd_2_textarea_1_audio = "##CHAPTERTITLE##",
 
-    content_osd_1_textarea_1_audio_withalbumart = "##TEXTAREA_1_GEN##",
-    content_osd_1_textarea_2_audio_withalbumart = "##TEXTAREA_2_GEN##",
-    content_osd_1_textarea_2_reldate_audio_withalbumart = "{{#?TEXTAREA_2_RELDATE_GEN}}{{UNICODE_SP}}(##TEXTAREA_2_RELDATE_GEN##){{#/}}",
-    content_osd_1_textarea_3_audio_withalbumart = "##TEXTAREA_3_GEN##",
+    content_osd_1_textarea_1_audio_withalbumart = "{{#|ARTIST}}##ARTIST##{{#|DIRNAME_UP}}##DIRNAME_UP##{{#/}}",
+    content_osd_1_textarea_2_audio_withalbumart = "{{#|ALBUM}}##ALBUM##{{#|DIRNAME}}##DIRNAME##{{#/}}",
+    content_osd_1_textarea_2_reldate_audio_withalbumart = "{{#|RELEASE_YEAR}}{{UNICODE_SP}}(##RELEASE_YEAR##){{#/}}",
+    content_osd_1_textarea_3_audio_withalbumart = "{{#|TITLE}}##TITLE##{{#|FILENAME}}##FILENAME##{{#/}}",
     content_osd_1_textarea_4_audio_withalbumart = "##TEXTAREA_4_GEN##",
-    content_osd_2_textarea_1_audio_withalbumart = "##TEXTAREA_1_GEN##",
+    content_osd_2_textarea_1_audio_withalbumart = "##CHAPTERTITLE##",
 
-    content_osd_1_textarea_1_video = "##TEXTAREA_1_GEN##",
-    content_osd_1_textarea_2_video = "##TEXTAREA_2_GEN##",
-    content_osd_1_textarea_2_reldate_video = "{{#?TEXTAREA_2_RELDATE_GEN}}{{UNICODE_SP}}(##TEXTAREA_2_RELDATE_GEN##){{#/}}",
-    content_osd_1_textarea_3_video = "##TEXTAREA_3_GEN##",
+    content_osd_1_textarea_1_video = "##DIRNAME_UP##",
+    content_osd_1_textarea_2_video = "##DIRNAME##",
+    content_osd_1_textarea_2_reldate_video = "{{#|RELEASE_YEAR}}{{UNICODE_SP}}(##RELEASE_YEAR##){{#/}}",
+    content_osd_1_textarea_3_video = "{{#|TITLE}}##TITLE##{{#|FILENAME}}##FILENAME##{{#/}}",
     content_osd_1_textarea_4_video = "##TEXTAREA_4_GEN##",
-    content_osd_2_textarea_1_video = "##TEXTAREA_1_GEN##",
+    content_osd_2_textarea_1_video = "##CHAPTERTITLE##",
 
-    content_osd_1_textarea_1_image = "##TEXTAREA_1_GEN##",
-    content_osd_1_textarea_2_image = "##TEXTAREA_2_GEN##",
-    content_osd_1_textarea_2_reldate_image = "{{#?TEXTAREA_2_RELDATE_GEN}}{{UNICODE_SP}}(##TEXTAREA_2_RELDATE_GEN##){{#/}}",
-    content_osd_1_textarea_3_image = "##TEXTAREA_3_GEN##",
+    content_osd_1_textarea_1_image = "{{#|ARTIST}}##ARTIST##{{#|DIRNAME_UP}}##DIRNAME_UP##{{#/}}",
+    content_osd_1_textarea_2_image = "{{#|ALBUM}}##ALBUM##{{#|DIRNAME}}##DIRNAME##{{#/}}",
+    content_osd_1_textarea_2_reldate_image = "{{#|RELEASE_YEAR}}{{UNICODE_SP}}(##RELEASE_YEAR##){{#/}}",
+    content_osd_1_textarea_3_image = "{{#|TITLE}}##TITLE##{{#|FILENAME}}##FILENAME##{{#/}}",
     content_osd_1_textarea_4_image = "##TEXTAREA_4_GEN##",
-    content_osd_2_textarea_1_image = "##TEXTAREA_1_GEN##",
+    content_osd_2_textarea_1_image = "",
 
-    -- Global string substitutions for filename / foldername metadata fallback
+    content_osd_1_textarea_1_stream = "",
+    content_osd_1_textarea_2_stream = "##UPLOADER##",
+    content_osd_1_textarea_3_stream = "##MEDIATITLE##",
+    content_osd_1_textarea_4_stream = "##TEXTAREA_4_GEN##",
+    content_osd_2_textarea_1_stream = "##CHAPTERTITLE##",
+
+    -- Global string substitutions for pathname fallback
 
     -- For *_pattern_* options, so called "patterns" apply as documented in Lua
     -- documentation:
@@ -305,44 +310,50 @@ local options = {
     -- subsequent equal signs or quotes will be part of the value.
 
     -- For *_repl_* options, value is taken as such as a string replacement.
-    -- Optionally, space character can be entered as %UNICODE_SP% in case of
+    -- Optionally, space character can be inserted as %UNICODE_SP% in case of
     -- a need to make it visible (e.g. if it's at the end of the string).
 
-    -- Text Area 1: Folder name one above of the currently loaded media file
+    -- Text Area 1: Directory name one above of the currently loaded media file
 
-    -- Empty slot
+    -- (empty slot)
     gsub_text_area_1_fallback_pattern_1 = "",
     gsub_text_area_1_fallback_repl_1 = "",
-    -- Empty slot
+    -- (empty slot)
     gsub_text_area_1_fallback_pattern_2 = "",
     gsub_text_area_1_fallback_repl_2 = "",
-    -- Empty slot
+    -- (empty slot)
     gsub_text_area_1_fallback_pattern_3 = "",
     gsub_text_area_1_fallback_repl_3 = "",
 
-    -- Text Area 2: Folder name of the currently loaded media file
+    -- Text Area 2: Directory name of the currently loaded media file
 
-    -- Empty slot
+    -- (empty slot)
     gsub_text_area_2_fallback_pattern_1 = "",
     gsub_text_area_2_fallback_repl_1 = "",
-    -- Empty slot
+    -- (empty slot)
     gsub_text_area_2_fallback_pattern_2 = "",
     gsub_text_area_2_fallback_repl_2 = "",
-    -- Empty slot
+    -- (empty slot)
     gsub_text_area_2_fallback_pattern_3 = "",
     gsub_text_area_2_fallback_repl_3 = "",
 
     -- Text Area 3: File name without extension
 
-    -- Replace underscores with spaces
-    gsub_text_area_3_fallback_pattern_1 = "_",
+    -- Replace underscore(s) with space character
+    gsub_text_area_3_fallback_pattern_1 = "_+",
     gsub_text_area_3_fallback_repl_1 = "%UNICODE_SP%",
     -- Remove leading track number
     gsub_text_area_3_fallback_pattern_2 = "^%d+%s+-%s+",
     gsub_text_area_3_fallback_repl_2 = "",
-    -- Empty slot
+    -- (empty slot)
     gsub_text_area_3_fallback_pattern_3 = "",
     gsub_text_area_3_fallback_repl_3 = "",
+
+    -- FIXME: Remove options below on next release.
+    -- Enable pathname fallback for text area
+    enable_pathname_fallback_textarea_1 = true,
+    enable_pathname_fallback_textarea_2 = true,
+    enable_pathname_fallback_textarea_3 = true,
 }
 
 opt.read_options(options)
@@ -354,18 +365,18 @@ local state = {
 }
 
 local mediatype = {
-    UNKNOWN = "unknown",
     AUDIO = "audio",
     AUDIO_WITHALBUMART = "audio_withalbumart",
     VIDEO = "video",
     IMAGE = "image",
+    STREAM = "stream",
 }
 
 local osd_enabled = false
 local osd_autohide = false
 local osd_enabled_usertoggled = false
 local osd_autohide_usertoggled = false
-local curr_mediatype = mediatype.UNKNOWN
+local curr_mediatype = nil
 local curr_state = state.OSD_HIDDEN
 local osd_overlay_osd_1 = mp.create_osd_overlay("ass-events")
 local osd_overlay_osd_2 = mp.create_osd_overlay("ass-events")
@@ -607,17 +618,6 @@ local function str_trunc(str)
     return result
 end
 
-local function str_capture4digits(s)
-    res = ""
-    if str_isnonempty(s) then
-        local _, _, s_match = string.find(s, '([%d][%d][%d][%d])')
-        if s_match then
-            res = s_match
-        end
-    end
-    return res
-end
-
 local function bool2enabled_str(arg)
     local result = "Disabled"
 
@@ -643,7 +643,7 @@ local function str_split(s, split_char)
 
             if str_isnonempty(token_pass_2)
             then
-                msg.debug("str_split(): token: \"" .. token_pass_2 .. "\"")
+                msg.trace("str_split(): new token: \"" .. token_pass_2 .. "\"")
                 res_t[token_pass_2] = true
             end
         end
@@ -947,11 +947,11 @@ end
 local function prepare_gsubtable()
     local gsub_textarea_slotmax = {
         -- num. of global re substitution slots for textarea 1 in user options
-        options.enable_pathname_fallback_textarea_1 and 3 or 0,
+        options.enable_pathname_fallback_dirname_up and 3 or 0,
         -- num. of global re substitution slots for textarea 2 in user options
-        options.enable_pathname_fallback_textarea_2 and 3 or 0,
+        options.enable_pathname_fallback_dirname and 3 or 0,
         -- num. of global re substitution slots for textarea 3 in user options
-        options.enable_pathname_fallback_textarea_3 and 3 or 0
+        options.enable_pathname_fallback_filename and 3 or 0
     }
 
     for gsub_textarea_idx, gsub_textarea_slotmax in ipairs(gsub_textarea_slotmax)
@@ -1005,6 +1005,7 @@ local ass_tmpl = {
             audio_withalbumart = nil,
             video = nil,
             image = nil,
+            stream = nil,
         }
     },
     osd_2 = {
@@ -1014,31 +1015,16 @@ local ass_tmpl = {
             audio_withalbumart = nil,
             video = nil,
             image = nil,
+            stream = nil,
         }
     },
-    strid = {
-        textarea_1 = "TEXTAREA_1_GEN",
-        textarea_2 = "TEXTAREA_2_GEN",
-        textarea_2_reldate = "TEXTAREA_2_RELDATE_GEN",
-        textarea_3 = "TEXTAREA_3_GEN",
-        textarea_4 = "TEXTAREA_4_GEN",
-
-        playlist_pos = "PLAYLIST_POS",
-        playlist_count = "PLAYLIST_COUNT",
-        chapter_curr = "CHAPTER_CURR",
-        chapter_count = "CHAPTER_COUNT",
-        albumtrack = "ALBUMTRACK",
-
-        textarea_1_metakey = "TEXTAREA_1_METAKEY",
-        textarea_2_metakey = "TEXTAREA_2_METAKEY",
-        textarea_2_reldate_metakey = "TEXTAREA_2_RELDATE_METAKEY",
-        textarea_3_metakey = "TEXTAREA_3_METAKEY",
-        textarea_4_metakey = "TEXTAREA_4_METAKEY",
-    }
 }
+
 local tmpl_token_type = {
     TEXT = "_text_",
-    COND = "_cond_"
+    COND = "_cond_",
+    OR = "_or_",
+    OR_END = "_or_end_",
 }
 
 local function ass_styleoverride_fontstyle(italic, bold, str)
@@ -1103,176 +1089,187 @@ local function ass_prepare_template_textarea(ass_style_textarea, content_textare
 end
 
 local function ass_prepare_templates()
-    -- sharing ASS/SSA style override code mark '{' in our templates
+    -- sharing ASS/SSA style override code mark '{' with our templates
 
     local ass_style =
         parse_style_options()
 
-    local tmpl_osd_1 = "{{TEXTAREA_1_CONTENT}}{{ASS_NEWLINE}}{{TEXTAREA_2_CONTENT}}{{TEXTAREA_2_RELDATE_CONTENT}}{{ASS_NEWLINE}}{{TEXTAREA_3_CONTENT}}{{ASS_NEWLINE}}{{TEXTAREA_4_CONTENT}}"
+    local textarea_count = { -- for textarea_* loops
+        osd_1 = 4,
+        osd_2 = 1,
+    }
+    local ass_tmpl_layout = {
+        osd_1 = options.tmpl_layout_osd_1,
+        osd_2 = options.tmpl_layout_osd_2,
+    }
     local ass_tmpl_media = {
         osd_1 = {},
-        osd_2 = {}
+        osd_2 = {},
     }
-    local osd_1_textarea_count = 4 -- for textarea_* loops
 
-    for _, mediatype_ in pairs(mediatype)
+    for osd_n, ass_tmpl_layout in pairs(ass_tmpl_layout)
     do
-        if mediatype_ ~= mediatype.UNKNOWN
-        then
-            local ass_tmpl_osd_1 =
-                ass_style.osd_1.alignment ..
-                ass_style.osd_1.bord ..
-                tmpl_osd_1
+        for _, mediatype_ in pairs(mediatype)
+        do
+            local ass_tmpl =
+                ass_style[osd_n].alignment ..
+                ass_style[osd_n].bord ..
+                ass_tmpl_layout
 
-            for i = 1, osd_1_textarea_count
+            for i = 1, textarea_count[osd_n]
             do
                 local tmpl_strid_textarea =
-                    "{{TEXTAREA_" .. tostring(i) .. "_CONTENT}}"
+                    "{{CONTENT_TEXTAREA_" .. tostring(i) .. "_MEDIA}}"
 
                 local ass_style_textarea =
-                    ass_style.osd_1["textarea_" .. tostring(i)]
+                    ass_style[osd_n]["textarea_" .. tostring(i)]
 
                 local content_textarea =
-                    options["content_osd_1_textarea_" ..
-                            tostring(i) ..
-                            "_" .. mediatype_]
+                    options["content_" ..
+                            osd_n .. "_" ..
+                            "textarea_" ..
+                            tostring(i) .. "_" ..
+                            mediatype_]
 
                 local ass_tmpl_textarea =
                     ass_prepare_template_textarea(
                         ass_style_textarea,
                         content_textarea)
 
-                ass_tmpl_osd_1 =
+                ass_tmpl =
                     string.gsub(
-                        ass_tmpl_osd_1,
+                        ass_tmpl,
                         tmpl_strid_textarea,
                         ass_tmpl_textarea)
             end
 
-            ass_tmpl_osd_1 =
-                string.gsub(
-                    ass_tmpl_osd_1,
-                    "{{TEXTAREA_2_RELDATE_CONTENT}}",
-                    ass_prepare_template_textarea(
-                        ass_style.osd_1.textarea_2_reldate,
-                        options["content_osd_1_textarea_2_reldate_" ..
-                                mediatype_]))
+            if osd_n == "osd_1" -- remnant of bad original design
+            then
+                ass_tmpl =
+                    string.gsub(
+                        ass_tmpl,
+                        "{{CONTENT_TEXTAREA_2_RELDATE_MEDIA}}",
+                        ass_prepare_template_textarea(
+                            ass_style[osd_n].textarea_2_reldate,
+                            options["content_" ..
+                                    osd_n ..
+                                    "_textarea_2_reldate_" ..
+                                    mediatype_]))
+            end
 
-            ass_tmpl_osd_1 =
+            ass_tmpl =
                 string.gsub(
-                    ass_tmpl_osd_1,
-                    "{{ASS_NEWLINE}}",
+                    ass_tmpl,
+                    "{{NEWLINE}}",
                     ass_newline())
 
-            ass_tmpl_osd_1 = -- replace {{UNICODE_SP}} with space character
+            ass_tmpl =
                 string.gsub(
-                    ass_tmpl_osd_1,
+                    ass_tmpl,
                     "{{UNICODE_SP}}",
                     " ")
 
-            local ass_tmpl_osd_2 =
-                ass_style.osd_2.alignment ..
-                ass_style.osd_2.bord ..
-
-                ass_prepare_template_textarea(
-                    ass_style.osd_2.textarea_1,
-                    options["content_osd_2_textarea_1_" ..
-                            mediatype_])
-
-            ass_tmpl_osd_2 =
-                string.gsub(
-                    ass_tmpl_osd_2,
-                    "{{ASS_NEWLINE}}",
-                    ass_newline())
-
-            ass_tmpl_osd_2 = -- replace {{UNICODE_SP}} with space character
-                string.gsub(
-                    ass_tmpl_osd_2,
-                    "{{UNICODE_SP}}",
-                    " ")
-
-            ass_tmpl_media.osd_1[mediatype_] = ass_tmpl_osd_1
-            ass_tmpl_media.osd_2[mediatype_] = ass_tmpl_osd_2
+            ass_tmpl_media[osd_n][mediatype_] = ass_tmpl
 
             msg.trace(
-                "ass_prepare_templates(): tmpl_media (osd_1/" ..
-                mediatype_ ..
-                "): " ..
-                ass_tmpl_osd_1)
-
-            msg.trace(
-                "ass_prepare_templates(): tmpl_media (osd_2/" ..
-                mediatype_ ..
-                "): " ..
-                ass_tmpl_osd_2)
+                "ass_prepare_templates(): tmpl_media " ..
+                "(" .. osd_n .. "/" .. mediatype_ .. "): " ..
+                ass_tmpl)
         end
     end
 
-    local token_text
-
     for _, mediatype_ in pairs(mediatype)
     do
-        if mediatype_ ~= mediatype.UNKNOWN
-        then
-            for osd_n = 1, 2
-            do
-                local tmpl = ass_tmpl_media["osd_" .. osd_n][mediatype_]
-                local token
-                local tmpl_tokens = {}
-                local curr_pos = 1
+        for osd_n, ass_tmpl_media in pairs(ass_tmpl_media)
+        do
+            local tmpl = ass_tmpl_media[mediatype_]
+            local token = nil
+            local tmpl_tokens = {}
+            local curr_pos = 1
 
-                repeat
-                    local curr_token_type = tmpl_token_type.TEXT
-                    local idx_section_start,
-                        idx_section_end,
-                        section_name,
-                        section_text =
-                            string.find(tmpl, "{{#[?](.-)}}(.-){{#/}}", curr_pos)
+            repeat
+                local curr_token_type = tmpl_token_type.TEXT
+                local idx_section_start,
+                    idx_section_end,
+                    section_op,
+                    section_var,
+                    section_text =
+                        string.find(tmpl, "{{#([?|])(.-)}}(.-){{#/}}", curr_pos)
 
-                    if idx_section_start and idx_section_end
-                        and section_name and section_text
+                if idx_section_start and idx_section_end
+                    and section_op and section_var and section_text
+                then
+                    if idx_section_start ~= curr_pos
                     then
-                        if idx_section_start ~= curr_pos
-                        then
-                            token = {
-                                token_type =
-                                    curr_token_type,
-                                token_text =
-                                    string.sub(tmpl, curr_pos, idx_section_start - 1)
-                            }
-                            table.insert(tmpl_tokens, token)
-                        end
+                        token = {
+                            token_type =
+                                curr_token_type,
+                            token_text =
+                                string.sub(tmpl, curr_pos, idx_section_start - 1)
+                        }
+                        table.insert(tmpl_tokens, token)
+                    end
 
+                    if section_op == "?"
+                    then
                         curr_token_type = tmpl_token_type.COND
+
                         token = {
                             token_type =
                                 curr_token_type,
                             token_var =
-                                section_name,
+                                section_var,
                             token_text =
                                 section_text
                         }
                         table.insert(tmpl_tokens, token)
-                        curr_pos = idx_section_end + 1
 
-                    else
+                    elseif section_op == "|"
+                    then
+                        curr_token_type = tmpl_token_type.OR
+
+                        for section_text, next_section_var in string.gmatch(section_text .. "{{#|}}", "(.-){{#|(.-)}}")
+                        do
+                            token = {
+                                token_type =
+                                    curr_token_type,
+                                token_var =
+                                    section_var,
+                                token_text =
+                                    section_text
+                            }
+                            section_var = next_section_var
+                            table.insert(tmpl_tokens, token)
+                        end
+
                         token = {
                             token_type =
-                                curr_token_type,
+                                tmpl_token_type.OR_END,
+                            token_var =
+                                nil,
                             token_text =
-                                string.sub(tmpl, curr_pos)
+                                nil
                         }
                         table.insert(tmpl_tokens, token)
-                        break
                     end
-                until curr_pos >= string.len(tmpl)
 
-                ass_tmpl["osd_" .. osd_n].tokens_media[mediatype_] = tmpl_tokens
-                msg.trace("ass_prepare_templates(): tmpl_tokens (osd_" ..
-                    osd_n .. "/" ..
-                    mediatype_ .. "): " ..
-                    utils.to_string(tmpl_tokens))
-            end
+                    curr_pos = idx_section_end + 1
+                else
+                    token = {
+                        token_type =
+                            curr_token_type,
+                        token_text =
+                            string.sub(tmpl, curr_pos)
+                    }
+                    table.insert(tmpl_tokens, token)
+                    break
+                end
+            until curr_pos >= string.len(tmpl)
+
+            ass_tmpl[osd_n].tokens_media[mediatype_] = tmpl_tokens
+            msg.trace("ass_prepare_templates(): tmpl_tokens " ..
+                "(" .. osd_n .. "/" .. mediatype_ .. "): " ..
+                utils.to_string(tmpl_tokens))
         end
     end
 end
@@ -1439,36 +1436,393 @@ local function reset_usertoggled()
     show_statusosd()
 end
 
+local function get_abspath()
+    local path =
+        utils.join_path(
+            mp.get_property("working-directory"),
+            mp.get_property("path")
+        )
+
+    -- replace all current dir refs '/./' with '/'
+    path = string.gsub(path, "([/\\])%.[/\\]", "%1")
+
+    return path
+end
+
+local function get_chapter_pos()
+    local prop_chapter_curr =
+        mp.get_property_number("chapter", -1) + 1 -- zero-indexed
+    local prop_chapters_total =
+        mp.get_property_number("chapters", -1)
+    return prop_chapter_curr, prop_chapters_total
+end
+
+local function mediatype_is_stream()
+    local prop_path           = mp.get_property_osd("path")
+    local prop_streamfilename = mp.get_property_osd("stream-open-filename")
+    local prop_fileformat     = mp.get_property_osd("file-format")
+
+    return
+        prop_fileformat == "hls" or -- hls --> http live streaming
+        prop_path ~= prop_streamfilename -- path ~= actual media URL
+end
+
+local tmpl_var = {
+    playlist_pos = {
+        tmpl_key = "PLAYLIST_POS",
+    },
+    playlist_count = {
+        tmpl_key = "PLAYLIST_COUNT",
+    },
+    chapter_curr = {
+        tmpl_key = "CHAPTER_CURR",
+    },
+    chapter_count = {
+        tmpl_key = "CHAPTER_COUNT",
+    },
+    chaptertitle = {
+        tmpl_key = "CHAPTERTITLE",
+    },
+
+    artist = {
+        tmpl_key = "ARTIST",
+        gatherfunc = function()
+            local artist_str = mp.get_property_osd("metadata/by-key/artist")
+            if str_isempty(artist_str)
+            then
+                artist_str = mp.get_property_osd("metadata/by-key/album_artist")
+                if str_isempty(artist_str)
+                then
+                    artist_str = mp.get_property_osd("metadata/by-key/composer")
+                end
+            end
+
+            return artist_str
+        end
+    },
+
+    album = {
+        tmpl_key = "ALBUM",
+        gatherfunc = function()
+            local prop_chapter_curr, prop_chapters_total =
+                get_chapter_pos()
+            local album_str =
+                mp.get_property_osd("metadata/by-key/album")
+
+            -- For audio files with internal chapters ...
+            if prop_chapter_curr > 0 and
+                prop_chapters_total > 0 and
+                (curr_mediatype == mediatype.AUDIO or
+                curr_mediatype == mediatype.AUDIO_WITHALBUMART)
+            then
+                if str_isempty(album_str)
+                then
+                    -- meta: Title
+                    --   contains _often_ album name, use it in a pinch.
+                    --   sometimes, this contains better data than 'album' property,
+                    --   but how would we know (switch it on a mouse click?)
+                    album_str = mp.get_property_osd("metadata/by-key/title")
+                end
+            end
+
+            return album_str
+        end
+    },
+
+    title = {
+        tmpl_key = "TITLE",
+        gatherfunc = function()
+            local prop_chapter_curr, prop_chapters_total =
+                get_chapter_pos()
+            local title_str = nil
+
+            -- For audio files with internal chapters ...
+            if prop_chapter_curr > 0 and
+                prop_chapters_total > 0 and
+                ( curr_mediatype == mediatype.AUDIO or
+                curr_mediatype == mediatype.AUDIO_WITHALBUMART )
+            then
+                -- meta: Chapter Title
+                --   seems to contain song name for audio files with chapters
+                title_str =
+                    mp.get_property(
+                        "chapter-list/" .. tostring(prop_chapter_curr) .. "/title")
+
+            -- meta: Title
+            else
+                title_str = mp.get_property_osd("metadata/by-key/title")
+            end
+
+            return title_str
+        end
+    },
+
+    release_year = {
+        tmpl_key = "RELEASE_YEAR",
+        gatherfunc = function()
+            local function str_capture4digits(s)
+                res = ""
+                if str_isnonempty(s) then
+                    local _, _, s_match = string.find(s, '([%d][%d][%d][%d])')
+                    if s_match then
+                        res = s_match
+                    end
+                end
+                return res
+            end
+
+            local prop_chapter_curr, prop_chapters_total =
+                get_chapter_pos()
+            local release_year_str =
+                mp.get_property_osd("metadata/by-key/date")
+            release_year_str =
+                str_capture4digits(release_year_str)
+
+            -- For audio files with internal chapters ...
+            if prop_chapter_curr > 0 and
+                prop_chapters_total > 0 and
+                ( curr_mediatype == mediatype.AUDIO or
+                curr_mediatype == mediatype.AUDIO_WITHALBUMART )
+            then
+                if str_isempty(release_year_str)
+                then
+                    -- meta: Track
+                    --   contains _often_ release date, use it in a pinch.
+                    local prop_meta_track = mp.get_property_osd("metadata/by-key/track")
+                    prop_meta_track = str_capture4digits(prop_meta_track)
+
+                    if str_isnonempty(prop_meta_track)
+                    then
+                        release_year_str = prop_meta_track
+                    end
+                end
+            end
+
+            return release_year_str
+        end
+    },
+
+    albumtrack_num = {
+        tmpl_key = "ALBUMTRACK_NUM",
+        gatherfunc = function()
+            local albumtrack_num_str = nil
+            local prop_meta_track = mp.get_property_osd("metadata/by-key/track")
+
+            -- meta: Track Number
+            if (curr_mediatype == mediatype.AUDIO or
+                curr_mediatype == mediatype.AUDIO_WITHALBUMART) and
+                str_isnonempty(prop_meta_track)
+            then
+                local _, _, s_match = string.find(prop_meta_track, '^(%d+)')
+                if s_match
+                then
+                    local tracknum = tonumber(s_match)
+                    if tracknum and
+                        tracknum < 999 -- track number can contain release year,
+                                    -- skip for more-than-three-digit track numbers
+                    then
+                        albumtrack_num_str = tostring(tracknum)
+                    end
+                end
+            end
+
+            return albumtrack_num_str
+        end
+    },
+
+    uploader = {
+        tmpl_key = "UPLOADER",
+        gatherfunc = function()
+            local uploader_str =
+                mp.get_property_osd("metadata/by-key/uploader")
+            return uploader_str
+        end
+    },
+
+    mediatitle = {
+        tmpl_key = "MEDIATITLE",
+        gatherfunc = function()
+            local mediatitle_str =
+                mp.get_property_osd("media-title")
+            return mediatitle_str
+        end
+    },
+
+    dirname_up = {
+        tmpl_key = "DIRNAME_UP",
+        gatherfunc = function()
+            local dirname_up_str = nil
+
+            if options.enable_pathname_fallback_dirname_up
+                -- FIXME: Remove option below on next release
+                and options.enable_pathname_fallback_textarea_1
+            then
+                dirname_up_str =
+                    string.match(get_abspath(), ".*[/\\](.*)[/\\].*[/\\].*")
+
+                if dirname_up_str
+                then
+                    dirname_up_str =
+                        gsubloop(1, dirname_up_str)
+                end
+            end
+
+            return dirname_up_str
+        end
+    },
+
+    dirname = {
+        tmpl_key = "DIRNAME",
+        gatherfunc = function()
+            local dirname_str = nil
+
+            if options.enable_pathname_fallback_dirname
+                -- FIXME: Remove option below on next release
+                and options.enable_pathname_fallback_textarea_2
+            then
+                dirname_str =
+                    string.match(get_abspath(), ".*[/\\](.*)[/\\].*")
+
+                if dirname_str
+                then
+                    dirname_str =
+                        gsubloop(2, dirname_str)
+                end
+            end
+
+            return dirname_str
+        end
+    },
+
+    filename = {
+        tmpl_key = "FILENAME",
+        gatherfunc = function()
+            local filename_str = nil
+
+            if options.enable_pathname_fallback_filename
+                -- FIXME: Remove option below on next release
+                and options.enable_pathname_fallback_textarea_3
+            then
+                filename_str =
+                    mp.get_property_osd("filename/no-ext")
+
+                if filename_str
+                then
+                    filename_str =
+                        gsubloop(3, filename_str)
+                end
+            end
+
+            return filename_str
+        end
+    },
+
+    -- FIXME: Remove on next release. Obsolete code.
+    textarea_1_gen = {
+        tmpl_key = "TEXTAREA_1_GEN",
+    },
+    textarea_2_gen = {
+        tmpl_key = "TEXTAREA_2_GEN",
+    },
+    textarea_3_gen = {
+        tmpl_key = "TEXTAREA_3_GEN",
+    },
+    textarea_4_gen = {
+        tmpl_key = "TEXTAREA_4_GEN",
+    },
+
+    textarea_1_metakey = {
+        tmpl_key = "TEXTAREA_1_METAKEY",
+    },
+    textarea_2_metakey = {
+        tmpl_key = "TEXTAREA_2_METAKEY",
+    },
+    textarea_3_metakey = {
+        tmpl_key = "TEXTAREA_3_METAKEY",
+    },
+    textarea_4_metakey = {
+        tmpl_key = "TEXTAREA_4_METAKEY",
+    },
+}
+
+local function lazyget_tmpl_data(tmpl_data, tmpl_var_s)
+    if not tmpl_data[tmpl_var_s]
+    then
+        local tmpl_var = tmpl_var[string.lower(tmpl_var_s)]
+
+        if tmpl_var and tmpl_var.gatherfunc
+        then
+            tmpl_data[tmpl_var_s] = tmpl_var.gatherfunc() or ""
+        end
+    end
+
+    return tmpl_data[tmpl_var_s]
+end
+
 local function tmpl_fill_content(tmpl_tokens, tmpl_data)
     local tmpl = ""
+    local ORed = false
 
     for _, token in ipairs(tmpl_tokens)
     do
-        msg.debug("tmpl_fill_content(): token: " ..
+        msg.trace("tmpl_fill_content(): token: " ..
             utils.to_string(token))
+
+        if ORed and token.token_type == tmpl_token_type.OR_END
+        then
+            ORed = false
+        end
 
         if token.token_type == tmpl_token_type.TEXT
         then
             tmpl = tmpl .. token.token_text
         elseif token.token_type == tmpl_token_type.COND
-            and str_isnonempty(tmpl_data[token.token_var])
+                and str_isnonempty(lazyget_tmpl_data(tmpl_data, token.token_var))
         then
             tmpl = tmpl .. token.token_text
+        elseif token.token_type == tmpl_token_type.OR
+                and not ORed -- keep ORed before lazy eval to event. skip it
+                and str_isnonempty(lazyget_tmpl_data(tmpl_data, token.token_var))
+        then
+            tmpl = tmpl .. token.token_text
+            ORed = true
         end
     end
 
     msg.debug("tmpl_fill_content(): tmpl:  " .. tmpl)
 
-    for _, strid in pairs(ass_tmpl.strid)
+    local curr_pos = 1
+
+    repeat
+        local idx_start,
+        idx_end,
+        tmpl_var =
+            string.find(tmpl, "##(.-)##", curr_pos)
+
+        if idx_start and idx_end and tmpl_var
+        then
+            msg.debug("tmpl_fill_content(): found template var: " ..
+                tmpl_var)
+            -- FIXME: Is it better to build the OSD string here ?
+            lazyget_tmpl_data(tmpl_data, tmpl_var)
+            curr_pos = idx_end + 1
+        else
+            break
+        end
+    until curr_pos >= string.len(tmpl)
+
+    for strid, val in pairs(tmpl_data)
     do
-        msg.debug("tmpl_fill_content(): gsub:  " .. strid ..
-            " --> " .. tostring(tmpl_data[strid]))
+        val = tostring(val)
+
+        msg.debug("tmpl_fill_content(): " ..
+            strid .. " --> " .. val)
 
         tmpl = string.gsub(
             tmpl,
             "##" .. strid .. "##",
-            str_isnonempty(tmpl_data[strid]) and
-                str_trunc(tmpl_data[strid]) or "",
+            str_isnonempty(val) and
+                str_trunc(val) or "",
             1)
     end
 
@@ -1481,250 +1835,191 @@ local function on_metadata_change(metadata_key, metadata_val)
     capitalizations for table keys which are case sensitive in Lua -->
     properties are always querried via mp.get_property().
     ]]
-    local prop_abspath  =
-        utils.join_path(
-            mp.get_property_osd("working-directory"),
-            mp.get_property_osd("path")
-        )
 
-    local prop_meta_track     = mp.get_property_osd("metadata/by-key/track")
-    local prop_meta_title     = mp.get_property_osd("metadata/by-key/title")
-
-    local prop_playlist_curr  = tonumber(mp.get_property("playlist-pos-1"), 10)
-    local prop_playlist_total = tonumber(mp.get_property("playlist-count"), 10)
-
-    local prop_chapter_curr   = tonumber(mp.get_property("chapter"), 10)
-    local prop_chapters_total = tonumber(mp.get_property("chapters"), 10)
-
-    if not ass_tmpl.osd_1.curr_tmpl then
+    local osd_tmpl = ass_tmpl.osd_1.curr_tmpl
+    if not osd_tmpl then
+        msg.warn("on_metadata_change(): Template for OSD-1 not yet available.")
         return
     end
-    local osd_tmpl = ass_tmpl.osd_1.curr_tmpl
     local tmpl_data = {}
-    local textarea_1_str = nil
-    local textarea_1_metakey_str = nil
-    local textarea_2_str = nil
-    local textarea_2_metakey_str = nil
-    local textarea_2_reldate_str = nil
-    local textarea_2_reldate_metakey_str = nil
-    local textarea_3_str = nil
-    local textarea_3_metakey_str = nil
-    local textarea_4_str = nil
-    local textarea_4_metakey_str = nil
 
-    local playing_file = true
-    do
-        local prop_path           = mp.get_property_osd("path")
-        local prop_streamfilename = mp.get_property_osd("stream-open-filename")
-        local prop_fileformat     = mp.get_property_osd("file-format")
-
-        playing_file =
-            (prop_fileformat ~= "hls") and -- not 'http live streaming'
-            (prop_path == prop_streamfilename) -- not processed by yt-dlp/youtube-dl
-    end
+    if true then -- FIXME: Remove on next release. Obsolete code.
+    local playing_file = not mediatype_is_stream()
 
     -- OSD-1
     -- ┌─────────────────┐
     -- │ TEXT AREA 1     │
     -- └─────────────────┘
+    local textarea_1_metakey_str = nil
+    local textarea_1_str = nil
+
     if playing_file
     then
-        -- meta: Artist
-        textarea_1_metakey_str = "Artist"
-        textarea_1_str = mp.get_property_osd("metadata/by-key/artist")
-
-        if str_isempty(textarea_1_str)
+        if str_isnonempty(
+            lazyget_tmpl_data(
+                tmpl_data, tmpl_var.artist.tmpl_key))
         then
-            textarea_1_str = mp.get_property_osd("metadata/by-key/album_artist")
+            textarea_1_metakey_str = "Artist"
+            textarea_1_str = tmpl_data[tmpl_var.artist.tmpl_key]
 
-            if str_isempty(textarea_1_str)
-            then
-                textarea_1_str = mp.get_property_osd("metadata/by-key/composer")
-
-                -- Foldername-Artist fallback
-                if options.enable_pathname_fallback_textarea_1
-                    and str_isempty(textarea_1_str)
-                then
-                    textarea_1_metakey_str = "Path"
-                    local folder_up_up = string.match(prop_abspath, ".*[/\\](.*)[/\\].*[/\\].*")
-                    if folder_up_up
-                    then
-                        textarea_1_str = gsubloop(1, folder_up_up)
-                    end
-                end
-            end
+        elseif options.enable_pathname_fallback_textarea_1
+                and str_isnonempty(lazyget_tmpl_data(
+                    tmpl_data, tmpl_var.dirname_up.tmpl_key))
+        then
+            textarea_1_metakey_str = "Path"
+            textarea_1_str = tmpl_data[tmpl_var.dirname_up.tmpl_key]
         end
-
-    else -- playing from remote source
-        -- meta: Uploader
-        textarea_1_metakey_str = "Uploader"
-        textarea_1_str = mp.get_property_osd("metadata/by-key/uploader")
+    else -- is stream
+        if str_isnonempty(
+            lazyget_tmpl_data(
+                tmpl_data, tmpl_var.uploader.tmpl_key))
+        then
+            textarea_1_metakey_str = "Uploader"
+            textarea_1_str = tmpl_data[tmpl_var.uploader.tmpl_key]
+        end
     end
 
-    tmpl_data[ass_tmpl.strid.textarea_1] = textarea_1_str
-    tmpl_data[ass_tmpl.strid.textarea_1_metakey] = textarea_1_metakey_str
+    tmpl_data[tmpl_var.textarea_1_metakey.tmpl_key] =
+        textarea_1_metakey_str
+    tmpl_data[tmpl_var.textarea_1_gen.tmpl_key] =
+        textarea_1_str
 
     -- ┌─────────────────┐
     -- │ TEXT AREA 2     │
     -- └─────────────────┘
+    local textarea_2_metakey_str = nil
+    local textarea_2_str = nil
+
     if playing_file
     then
-        -- meta: Album
-        textarea_2_metakey_str = "Album"
-        textarea_2_str = mp.get_property_osd("metadata/by-key/album")
-
-        -- meta: Album release date
-        local prop_meta_reldate = mp.get_property_osd("metadata/by-key/date")
-        prop_meta_reldate = str_capture4digits(prop_meta_reldate)
-
-        if str_isnonempty(prop_meta_reldate)
+        if str_isnonempty(
+            lazyget_tmpl_data(
+                tmpl_data, tmpl_var.album.tmpl_key))
         then
-            textarea_2_reldate_metakey_str = "Release Year"
-            textarea_2_reldate_str = prop_meta_reldate
-        end
-
-        -- For audio files with internal chapters ...
-        if prop_chapter_curr and
-            prop_chapters_total and
-            ( curr_mediatype == mediatype.AUDIO or
-            curr_mediatype == mediatype.AUDIO_WITHALBUMART )
-        then
-            if str_isempty(textarea_2_str)
-            then
-                -- meta: Title
-                --   contains _often_ album name, use it in a pinch.
-                --   sometimes, this contains better data than 'album' property,
-                --   but how would we know (switch it on a mouse click?)
-                textarea_2_metakey_str = "Album"
-                textarea_2_str = prop_meta_title
-            end
-
-            if str_isempty(textarea_2_reldate_str)
-            then
-                -- meta: Track
-                --   contains _often_ release date, use it in a pinch.
-                prop_meta_track = str_capture4digits(prop_meta_track)
-
-                if str_isnonempty(prop_meta_track)
-                then
-                    textarea_2_reldate_metakey_str = "Release Year"
-                    textarea_2_reldate_str = prop_meta_track
-                end
-            end
-        end
-
-        -- Foldername-Album fallback
-        if options.enable_pathname_fallback_textarea_2
-            and str_isempty(textarea_2_str)
+            textarea_2_metakey_str = "Album"
+            textarea_2_str = tmpl_data[tmpl_var.album.tmpl_key]
+        elseif options.enable_pathname_fallback_textarea_2
+                and str_isnonempty(lazyget_tmpl_data(
+                    tmpl_data, tmpl_var.dirname.tmpl_key))
         then
             textarea_2_metakey_str = "Path"
-            local folder_up = string.match(prop_abspath, ".*[/\\](.*)[/\\].*")
-            if folder_up
-            then
-                textarea_2_str = gsubloop(2, folder_up)
-            end
+            textarea_2_str = tmpl_data[tmpl_var.dirname.tmpl_key]
         end
 
-    else -- playing from remote source
-        -- could be filled with something useful in the future.
+    -- else -- is stream
+            -- could be filled with something useful in the future.
     end
 
-    tmpl_data[ass_tmpl.strid.textarea_2] = textarea_2_str
-    tmpl_data[ass_tmpl.strid.textarea_2_reldate] = textarea_2_reldate_str
-    tmpl_data[ass_tmpl.strid.textarea_2_metakey] = textarea_2_metakey_str
-    tmpl_data[ass_tmpl.strid.textarea_2_reldate_metakey] = textarea_2_reldate_metakey_str
+    tmpl_data[tmpl_var.textarea_2_metakey.tmpl_key] =
+        textarea_2_metakey_str
+    tmpl_data[tmpl_var.textarea_2_gen.tmpl_key] =
+        textarea_2_str
 
     -- ┌─────────────────┐
     -- │ TEXT AREA 3     │
     -- └─────────────────┘
+    local textarea_3_str = nil
+    local textarea_3_metakey_str = nil
+
     if playing_file
     then
-        -- For audio files with internal chapters ...
-        if prop_chapter_curr and
-            prop_chapters_total and
-            ( curr_mediatype == mediatype.AUDIO or
-            curr_mediatype == mediatype.AUDIO_WITHALBUMART )
+        if str_isnonempty(
+            lazyget_tmpl_data(
+                tmpl_data, tmpl_var.title.tmpl_key))
         then
-            -- meta: Chapter Title
-            --   seems to contain song name for audio files with chapters
             textarea_3_metakey_str = "Title"
-            textarea_3_str =
-                mp.get_property("chapter-list/" .. tostring(prop_chapter_curr) .. "/title")
-
-        -- meta: Title
-        else
-            -- meta: Title
-            textarea_3_metakey_str = "Title"
-            textarea_3_str = prop_meta_title
-        end
-
-        -- Filename fallback
-        if options.enable_pathname_fallback_textarea_3
-            and str_isempty(textarea_3_str)
+            textarea_3_str = tmpl_data[tmpl_var.title.tmpl_key]
+        elseif options.enable_pathname_fallback_textarea_3
+                and str_isnonempty(lazyget_tmpl_data(
+                    tmpl_data, tmpl_var.filename.tmpl_key))
         then
             textarea_3_metakey_str = "File"
-            textarea_3_str =
-                mp.get_property_osd("filename/no-ext")
-            textarea_3_str =
-                gsubloop(3, textarea_3_str)
+            textarea_3_str = tmpl_data[tmpl_var.filename.tmpl_key]
         end
 
-    else -- playing from remote source
-        -- meta: Media Title
-        textarea_3_metakey_str = "Title"
-        textarea_3_str = mp.get_property_osd("media-title")
+    else -- is stream
+        if str_isnonempty(
+            lazyget_tmpl_data(
+                tmpl_data, tmpl_var.mediatitle.tmpl_key))
+        then
+            textarea_3_metakey_str = "Media Title"
+            textarea_3_str = tmpl_data[tmpl_var.mediatitle.tmpl_key]
+        end
     end
 
-    tmpl_data[ass_tmpl.strid.textarea_3] = textarea_3_str
-    tmpl_data[ass_tmpl.strid.textarea_3_metakey] = textarea_3_metakey_str
+    tmpl_data[tmpl_var.textarea_3_metakey.tmpl_key] =
+        textarea_3_metakey_str
+    tmpl_data[tmpl_var.textarea_3_gen.tmpl_key] =
+        textarea_3_str
+    end
 
     -- ┌─────────────────┐
     -- │ TEXT AREA 4     │
     -- └─────────────────┘
+    local prop_playlist_curr =
+        mp.get_property_number("playlist-pos-1", 0)
+    local prop_playlist_total =
+        mp.get_property_number("playlist-count", 0)
+    local prop_chapter_curr, prop_chapters_total =
+        get_chapter_pos()
+
+    local prop_playlist_curr_str =
+        tostring(prop_playlist_curr)
+    local prop_playlist_total_str =
+        tostring(prop_playlist_total)
+    local prop_chapter_curr_str =
+        tostring(prop_chapter_curr)
+    local prop_chapters_total_str =
+        tostring(prop_chapters_total)
+
+    -- always set tmpl. vars below
+    tmpl_data[tmpl_var.playlist_pos.tmpl_key] =
+        prop_playlist_curr_str
+    tmpl_data[tmpl_var.playlist_count.tmpl_key] =
+        prop_playlist_total_str
+    tmpl_data[tmpl_var.chapter_curr.tmpl_key] =
+        prop_chapter_curr_str
+    tmpl_data[tmpl_var.chapter_count.tmpl_key] =
+        prop_chapters_total_str
+
+    local textarea_4_str = nil
+    local textarea_4_metakey_str = nil
+
     -- meta: (Big) Playlist position
-    if prop_playlist_curr and
-        prop_playlist_total
+    if prop_playlist_curr > 0 and
+        prop_playlist_total > 0
     then
         textarea_4_str =
-            tostring(prop_playlist_curr) ..
+            prop_playlist_curr_str ..
             "/" ..
-            tostring(prop_playlist_total)
-
-        tmpl_data[ass_tmpl.strid.playlist_pos] =
-            tostring(prop_playlist_curr)
-        tmpl_data[ass_tmpl.strid.playlist_count] =
-            tostring(prop_playlist_total)
+            prop_playlist_total_str
 
         -- For files with internal chapters ...
         -- meta: Chapter Number
-        if prop_chapter_curr and
-            prop_chapters_total
+        if prop_chapter_curr > 0 and
+            prop_chapters_total > 0
         then
             if options.show_chapternumber
             then
+                local chapternum_metakey_str = "Chapter: "
                 local chapternum_str = ""
 
-                if not ((curr_mediatype == mediatype.AUDIO or
-                   curr_mediatype == mediatype.AUDIO_WITHALBUMART) and
-                   prop_playlist_total == 1)
+                if not ((curr_mediatype == mediatype.AUDIO
+                        or curr_mediatype == mediatype.AUDIO_WITHALBUMART)
+                        and prop_playlist_total == 1)
                 then
-                    chapternum_str = "Chapter: "
+                    chapternum_str = chapternum_metakey_str
                 end
 
                 chapternum_str =
                     chapternum_str ..
-                    tostring(prop_chapter_curr + 1) ..
+                    prop_chapter_curr_str ..
                     "/" ..
-                    tostring(prop_chapters_total)
-
-                    tmpl_data[ass_tmpl.strid.chapter_curr] =
-                        tostring(prop_chapter_curr + 1)
-                    tmpl_data[ass_tmpl.strid.chapter_count] =
-                        tostring(prop_chapters_total)
+                    prop_chapters_total_str
 
                 if prop_playlist_total ~= 1 and
-                    ( prop_chapter_curr ~= prop_playlist_curr or
-                    prop_chapters_total ~= prop_playlist_total )
+                    (prop_chapter_curr ~= prop_playlist_curr
+                    or prop_chapters_total ~= prop_playlist_total)
                 then
                     chapternum_str =
                         chapternum_str ..
@@ -1737,71 +2032,67 @@ local function on_metadata_change(metadata_key, metadata_val)
                 textarea_4_str = chapternum_str
             end
 
-        -- meta: Track Number
-        elseif options.show_albumtracknumber and
-            ( curr_mediatype == mediatype.AUDIO or
-            curr_mediatype == mediatype.AUDIO_WITHALBUMART ) and
-            str_isnonempty(prop_meta_track)
+        elseif options.show_albumtracknumber
+                and str_isnonempty(
+                    lazyget_tmpl_data(
+                        tmpl_data, tmpl_var.albumtrack_num.tmpl_key))
         then
-            local _, _, s_match = string.find(prop_meta_track, '^(%d+)')
-            if s_match
+            local tracknum_str = tmpl_data[tmpl_var.albumtrack_num.tmpl_key]
+            local tracknum = tonumber(tracknum_str, 10)
+            local tracknum_metakey_str = "Track: "
+            local textarea_4_albumtrack_str = ""
+
+            if prop_playlist_total == 1
             then
-                local tracknum = tonumber(s_match)
-                if tracknum and
-                    tracknum < 999 -- track number can contain release year,
-                                   -- skip for more-than-three-digit track numbers
-                then
-                    local tracknum_str = ""
+                textarea_4_albumtrack_str =
+                    tracknum_metakey_str ..
+                    tracknum_str
 
-                    tmpl_data[ass_tmpl.strid.albumtrack] =
-                        tostring(tracknum)
+            elseif tracknum ~= prop_playlist_curr
+            then
+                textarea_4_albumtrack_str =
+                    tracknum_metakey_str ..
+                    tracknum_str ..
+                    ass_newline() ..
+                    "[" ..
+                    textarea_4_str ..
+                    "]"
+            end
 
-                    if prop_playlist_total == 1
-                    then
-                        tracknum_str =
-                            "Track: " ..
-                            tracknum
-
-                    elseif tracknum ~= prop_playlist_curr
-                    then
-                        tracknum_str =
-                            "Track: " ..
-                            tracknum ..
-                            ass_newline() ..
-                            "[" ..
-                            textarea_4_str ..
-                            "]"
-                    end
-
-                    if str_isnonempty(tracknum_str)
-                    then
-                        textarea_4_str = tracknum_str
-                    end
-                end
+            if str_isnonempty(textarea_4_albumtrack_str)
+            then
+                textarea_4_str = textarea_4_albumtrack_str
             end
         end
     end
 
-    tmpl_data[ass_tmpl.strid.textarea_4] = textarea_4_str
+    tmpl_data[tmpl_var.textarea_4_gen.tmpl_key] =
+        textarea_4_str
 
-    osd_overlay_osd_1.data = tmpl_fill_content(osd_tmpl, tmpl_data)
+    osd_overlay_osd_1.data =
+        tmpl_fill_content(osd_tmpl, tmpl_data)
 
     -- OSD-2
     -- ┌─────────────────┐
     -- │ TEXT AREA 1     │
     -- └─────────────────┘
-    if not ass_tmpl.osd_2.curr_tmpl then
-        return
-    end
     osd_tmpl = ass_tmpl.osd_2.curr_tmpl
-    tmpl_data = {}
-    textarea_1_metakey_str = "Chapter"
 
-    -- meta: Chapter Title
-    if options.enable_osd_2 and metadata_key == "chapter-metadata/title" and str_isnonempty(metadata_val) then
-        tmpl_data[ass_tmpl.strid.textarea_1] = metadata_val
-        tmpl_data[ass_tmpl.strid.textarea_1_metakey] = textarea_1_metakey_str
-        osd_overlay_osd_2.data = tmpl_fill_content(osd_tmpl, tmpl_data)
+    if osd_tmpl
+    then
+        -- meta: Chapter Title
+        if options.enable_osd_2
+            and metadata_key == "chapter-metadata/title"
+            and str_isnonempty(metadata_val)
+        then
+            tmpl_data = {}
+            tmpl_data[tmpl_var.chaptertitle.tmpl_key] =
+                metadata_val
+            osd_overlay_osd_2.data =
+                tmpl_fill_content(osd_tmpl, tmpl_data)
+        end
+    else
+        msg.warn("on_metadata_change(): Template for OSD-2 not yet available.")
     end
 
     if metadata_key == "chapter-metadata/title" and (curr_state == state.SHOWING_OSD_2 or (osd_autohide and curr_state == state.OSD_HIDDEN)) then
@@ -1912,14 +2203,15 @@ local function on_tracklist_change(name, tracklist)
     msg.debug("on_tracklist_change()")
 
     local prev_mediatype = curr_mediatype
-    curr_mediatype = mediatype.UNKNOWN
+    local prev_mediatype_is_stream = curr_mediatype == mediatype.STREAM
+    curr_mediatype = nil
 
     if tracklist then
         msg.debug("on_tracklist_change(): num of tracks: " .. tostring(#tracklist))
 
         for _, track in ipairs(tracklist) do
             if track.selected then
-                if track.type == "audio" and curr_mediatype == mediatype.UNKNOWN then
+                if track.type == "audio" and not curr_mediatype then
                     msg.debug("on_tracklist_change(): audio track selected")
                     curr_mediatype = mediatype.AUDIO
                 elseif track.type == "video" then
@@ -1938,23 +2230,36 @@ local function on_tracklist_change(name, tracklist)
         end
     end
 
-    if prev_mediatype ~= curr_mediatype
+    local curr_mediatype_is_stream = mediatype_is_stream()
+
+    if curr_mediatype
+        and (prev_mediatype ~= curr_mediatype
+        or prev_mediatype_is_stream ~= curr_mediatype_is_stream)
     then
         msg.debug("on_tracklist_change(): current media type: " ..
-            curr_mediatype:gsub("^%l", string.upper))
+            curr_mediatype:gsub("^%l", string.upper) ..
+            (curr_mediatype_is_stream and " (stream)" or ""))
 
         ass_tmpl.osd_1.curr_tmpl = nil
         ass_tmpl.osd_2.curr_tmpl = nil
 
-        for _, mediatype_ in pairs(mediatype)
-        do
-            if curr_mediatype == mediatype_
-            then
-                ass_tmpl.osd_1.curr_tmpl =
-                    ass_tmpl.osd_1.tokens_media[mediatype_]
-                ass_tmpl.osd_2.curr_tmpl =
-                    ass_tmpl.osd_2.tokens_media[mediatype_]
-                break
+        if curr_mediatype_is_stream
+        then
+            ass_tmpl.osd_1.curr_tmpl =
+                ass_tmpl.osd_1.tokens_media[mediatype.STREAM]
+            ass_tmpl.osd_2.curr_tmpl =
+                ass_tmpl.osd_2.tokens_media[mediatype.STREAM]
+        else
+            for _, mediatype_ in pairs(mediatype)
+            do
+                if curr_mediatype == mediatype_
+                then
+                    ass_tmpl.osd_1.curr_tmpl =
+                        ass_tmpl.osd_1.tokens_media[mediatype_]
+                    ass_tmpl.osd_2.curr_tmpl =
+                        ass_tmpl.osd_2.tokens_media[mediatype_]
+                    break
+                end
             end
         end
     end
