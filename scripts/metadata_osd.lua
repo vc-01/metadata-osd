@@ -41,7 +41,7 @@ local options = {
     enable_osd_2 = true,
 
     -- Enable pathname fallback
-    enable_pathname_fallback_dirname_up = true,
+    enable_pathname_fallback_dirnameup = true,
     enable_pathname_fallback_dirname = true,
     enable_pathname_fallback_filename = true,
 
@@ -302,58 +302,60 @@ local options = {
 
     -- Global string substitutions for pathname fallback
 
-    -- For *_pattern_* options, so called "patterns" apply as documented in Lua
+    -- For *_gsubpatt_* options, so called "patterns" apply as documented in Lua
     -- documentation:
     --   https://www.lua.org/manual/5.1/manual.html#5.4.1
 
     -- Characters after equal sign '=' are not interpreted specially,
     -- subsequent equal signs or quotes will be part of the value.
 
-    -- For *_repl_* options, value is taken as such as a string replacement.
+    -- For *_gsubrepl_* options, value is taken as such as string replacement.
     -- Optionally, space character can be inserted as %UNICODE_SP% in case of
     -- a need to make it visible (e.g. if it's at the end of the string).
 
     -- Text Area 1: Directory name one above of the currently loaded media file
 
     -- (empty slot)
-    gsub_text_area_1_fallback_pattern_1 = "",
-    gsub_text_area_1_fallback_repl_1 = "",
+    pathname_fallback_dirnameup_gsubpatt_1 = "",
+    pathname_fallback_dirnameup_gsubrepl_1 = "",
     -- (empty slot)
-    gsub_text_area_1_fallback_pattern_2 = "",
-    gsub_text_area_1_fallback_repl_2 = "",
+    pathname_fallback_dirnameup_gsubpatt_2 = "",
+    pathname_fallback_dirnameup_gsubrepl_2 = "",
     -- (empty slot)
-    gsub_text_area_1_fallback_pattern_3 = "",
-    gsub_text_area_1_fallback_repl_3 = "",
+    pathname_fallback_dirnameup_gsubpatt_3 = "",
+    pathname_fallback_dirnameup_gsubrepl_3 = "",
 
     -- Text Area 2: Directory name of the currently loaded media file
 
     -- (empty slot)
-    gsub_text_area_2_fallback_pattern_1 = "",
-    gsub_text_area_2_fallback_repl_1 = "",
+    pathname_fallback_dirname_gsubpatt_1 = "",
+    pathname_fallback_dirname_gsubrepl_1 = "",
     -- (empty slot)
-    gsub_text_area_2_fallback_pattern_2 = "",
-    gsub_text_area_2_fallback_repl_2 = "",
+    pathname_fallback_dirname_gsubpatt_2 = "",
+    pathname_fallback_dirname_gsubrepl_2 = "",
     -- (empty slot)
-    gsub_text_area_2_fallback_pattern_3 = "",
-    gsub_text_area_2_fallback_repl_3 = "",
+    pathname_fallback_dirname_gsubpatt_3 = "",
+    pathname_fallback_dirname_gsubrepl_3 = "",
 
     -- Text Area 3: File name without extension
 
     -- Replace underscore(s) with space character
-    gsub_text_area_3_fallback_pattern_1 = "_+",
-    gsub_text_area_3_fallback_repl_1 = "%UNICODE_SP%",
+    pathname_fallback_filename_gsubpatt_1 = "_+",
+    pathname_fallback_filename_gsubrepl_1 = "%UNICODE_SP%",
     -- Remove leading track number
-    gsub_text_area_3_fallback_pattern_2 = "^%d+%s+-%s+",
-    gsub_text_area_3_fallback_repl_2 = "",
+    pathname_fallback_filename_gsubpatt_2 = "^%d+%s+-%s+",
+    pathname_fallback_filename_gsubrepl_2 = "",
     -- (empty slot)
-    gsub_text_area_3_fallback_pattern_3 = "",
-    gsub_text_area_3_fallback_repl_3 = "",
+    pathname_fallback_filename_gsubpatt_3 = "",
+    pathname_fallback_filename_gsubrepl_3 = "",
 
     -- FIXME: Remove options below on next release.
     -- Enable pathname fallback for text area
     enable_pathname_fallback_textarea_1 = true,
     enable_pathname_fallback_textarea_2 = true,
     enable_pathname_fallback_textarea_3 = true,
+    -- Enable pathname fallback
+    enable_pathname_fallback_dirname_up = true,
 }
 
 opt.read_options(options)
@@ -372,6 +374,12 @@ local mediatype = {
     STREAM = "stream",
 }
 
+local pathname_fallback_type = {
+    DIRNAMEUP = "dirnameup",
+    DIRNAME = "dirname",
+    FILENAME = "filename",
+}
+
 local osd_enabled = false
 local osd_autohide = false
 local osd_enabled_usertoggled = false
@@ -381,7 +389,7 @@ local curr_state = state.OSD_HIDDEN
 local osd_overlay_osd_1 = mp.create_osd_overlay("ass-events")
 local osd_overlay_osd_2 = mp.create_osd_overlay("ass-events")
 local osd_timer -- forward declaration
-local gsublist_text_area_fallback = {}
+local pathname_fallback_gsubtable = {}
 local ellipsis_str = "..."  -- unicode notation for ellipsis "\u{2026}" works in
                             -- LuaJIT and since Lua5.3 which is not broadly
                             -- available yet.
@@ -944,50 +952,57 @@ local function parse_style_options()
     return ass_style
 end
 
-local function prepare_gsubtable()
-    local gsub_textarea_slotmax = {
-        -- num. of global re substitution slots for textarea 1 in user options
-        options.enable_pathname_fallback_dirname_up and 3 or 0,
-        -- num. of global re substitution slots for textarea 2 in user options
-        options.enable_pathname_fallback_dirname and 3 or 0,
-        -- num. of global re substitution slots for textarea 3 in user options
-        options.enable_pathname_fallback_filename and 3 or 0
-    }
+local function prepare_pathname_fallback_gsubtable()
+    -- num. of global "pattern" substitution slots in user options
+    local slotmax = {
+        [pathname_fallback_type.DIRNAMEUP] =
+            options.enable_pathname_fallback_dirnameup and 3 or 0,
+        [pathname_fallback_type.DIRNAME] =
+            options.enable_pathname_fallback_dirname and 3 or 0,
+        [pathname_fallback_type.FILENAME] =
+            options.enable_pathname_fallback_filename and 3 or 0,
+        }
 
-    for gsub_textarea_idx, gsub_textarea_slotmax in ipairs(gsub_textarea_slotmax)
+    for fallback_type, slotmax in pairs(slotmax)
     do
-        gsublist_text_area_fallback[gsub_textarea_idx] = {}
-        local gsub_prefix = "gsub_text_area_" .. gsub_textarea_idx
-        for pattern_idx = 1, gsub_textarea_slotmax
+        pathname_fallback_gsubtable[fallback_type] = {}
+        local useroptname_prefix = "pathname_fallback_" .. fallback_type
+        for gsub_idx = 1, slotmax
         do
-            local key = options[gsub_prefix .. "_fallback_pattern_" .. pattern_idx]
-            local val = options[gsub_prefix .. "_fallback_repl_" .. pattern_idx]
+            local key = options[useroptname_prefix .. "_gsubpatt_" .. gsub_idx]
+            local val = options[useroptname_prefix .. "_gsubrepl_" .. gsub_idx]
             val = val:gsub("%%UNICODE_SP%%", " ")
             if str_isnonempty(key) and val
             then
-                gsublist_text_area_fallback[gsub_textarea_idx][pattern_idx] =
+                pathname_fallback_gsubtable[fallback_type][gsub_idx] =
                     { [key] = val }
             end
         end
     end
 
-    msg.debug(
-        "prepare_gsubtable(): " .. utils.to_string(gsublist_text_area_fallback))
+    msg.trace(
+        "prepare_pathname_fallback_gsubtable(): " ..
+        utils.to_string(pathname_fallback_gsubtable))
 end
 
-local function gsubloop(gsub_textarea_idx, s)
-    msg.debug("gsubloop(): inp:  \"" .. s .. "\"")
-
-    for _, t in pairs(gsublist_text_area_fallback[gsub_textarea_idx])
+local function pathname_fallback_gsubloop(fallback_type, s)
+    for _, t in pairs(pathname_fallback_gsubtable[fallback_type])
     do
-        for pattern, repl in pairs(t)
+        for patt, repl in pairs(t)
         do
-            s = s:gsub(pattern, repl)
             msg.debug(
-                "gsubloop(): gsub: pattern: \"" ..
-                pattern .. "\", repl: \"" .. repl .. "\"")
+                "pathname_fallback_gsubloop(): " ..
+                string.format("%-9s", fallback_type) .. ": " ..
+                "<-- \"" .. s .. "\"")
+            s = s:gsub(patt, repl)
             msg.debug(
-                "gsubloop(): outp: \"" .. s .. "\"")
+                "pathname_fallback_gsubloop(): " ..
+                string.format("%-9s", fallback_type) .. ": " ..
+                "patt \"" .. patt .. "\", repl \"" .. repl .. "\"")
+            msg.debug(
+                "pathname_fallback_gsubloop(): " ..
+                string.format("%-9s", fallback_type) .. ": " ..
+                "--> \"" .. s .. "\"")
         end
     end
 
@@ -1653,8 +1668,9 @@ local tmpl_var = {
         gatherfunc = function()
             local dirname_up_str = nil
 
-            if options.enable_pathname_fallback_dirname_up
+            if options.enable_pathname_fallback_dirnameup
                 -- FIXME: Remove option below on next release
+                and options.enable_pathname_fallback_dirname_up
                 and options.enable_pathname_fallback_textarea_1
             then
                 dirname_up_str =
@@ -1663,7 +1679,8 @@ local tmpl_var = {
                 if dirname_up_str
                 then
                     dirname_up_str =
-                        gsubloop(1, dirname_up_str)
+                        pathname_fallback_gsubloop(
+                            pathname_fallback_type.DIRNAMEUP, dirname_up_str)
                 end
             end
 
@@ -1686,7 +1703,8 @@ local tmpl_var = {
                 if dirname_str
                 then
                     dirname_str =
-                        gsubloop(2, dirname_str)
+                        pathname_fallback_gsubloop(
+                            pathname_fallback_type.DIRNAME, dirname_str)
                 end
             end
 
@@ -1709,7 +1727,8 @@ local tmpl_var = {
                 if filename_str
                 then
                     filename_str =
-                        gsubloop(3, filename_str)
+                        pathname_fallback_gsubloop(
+                            pathname_fallback_type.FILENAME, filename_str)
                 end
             end
 
@@ -2269,7 +2288,7 @@ local function on_tracklist_change(name, tracklist)
 end
 
 ass_prepare_templates()
-prepare_gsubtable()
+prepare_pathname_fallback_gsubtable()
 
 mp.add_key_binding(
     options.key_toggleenable,
