@@ -28,7 +28,7 @@ cat > "$USERCONFFILE" <<~HEREDOCUMENT
 function extract_luaoptions()
 {
     declare -r MATCH_FROM="^local options"
-    declare -r MATCH_TO="\*\*\* UNSTABLE OPTIONS BELOW \*\*\*"
+    declare -r MATCH_TO="-- cut-here --"
 
     # Extract text between /MATCH_FROM/,/MATCH_TO/ excluding the match itself
     # FIXME: Don't add extra new line at the end.

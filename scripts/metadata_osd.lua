@@ -85,7 +85,7 @@ local options = {
     --   OSD messages will be trimmed after the specified (character) length.
     osd_message_maxlength = 96,
 
-    -- OSD-1 layout:
+    -- Default OSD-1 layout & content:
     -- ┌─────────────────┐
     -- │ padding top     │
     -- ├─────────────────┤
@@ -125,7 +125,7 @@ local options = {
     --  TEXT AREA 4           <not applied>
     -- ===================== =========================
 
-    -- OSD-2 layout:
+    -- Default OSD-2 layout & content:
     -- ┌─────────────────┐
     -- │ padding top     │
     -- ├─────────────────┤
@@ -249,8 +249,8 @@ local options = {
 
     -- OSD layout
 
+    -- Overall layout for elements
     tmpl_layout_osd_1 = "{{CONTENT_TEXTAREA_1_MEDIA}}{{NEWLINE}}{{CONTENT_TEXTAREA_2_MEDIA}}{{CONTENT_TEXTAREA_2_RELDATE_MEDIA}}{{NEWLINE}}{{CONTENT_TEXTAREA_3_MEDIA}}{{NEWLINE}}{{CONTENT_TEXTAREA_4_MEDIA}}",
-
     tmpl_layout_osd_2 = "{{CONTENT_TEXTAREA_1_MEDIA}}",
 
     -- Text area content for media type
@@ -262,35 +262,35 @@ local options = {
     --   Expand variable with name VAR:
     --     ##VAR##
     --   Conditionally include if value of VAR is a non zero length string:
-    --     {{#|VAR}}TEMPLATE_TEXT{{#/}}
+    --     {{#?VAR}}TEMPLATE_TEXT{{#/}}
     --   The above works also as logical OR, so multiple condidions are possible:
-    --     {{#|VAR_1}}TEMPLATE_TEXT_1{{#|VAR_2}}TEMPLATE_TEXT_2{{#/}}
+    --     {{#?VAR_1}}TEMPLATE_TEXT_1{{#?VAR_2}}TEMPLATE_TEXT_2{{#/}}
 
-    content_osd_1_textarea_1_audio = "{{#|ARTIST}}##ARTIST##{{#|DIRNAME_UP}}##DIRNAME_UP##{{#/}}",
-    content_osd_1_textarea_2_audio = "{{#|ALBUM}}##ALBUM##{{#|DIRNAME}}##DIRNAME##{{#/}}",
-    content_osd_1_textarea_2_reldate_audio = "{{#|RELEASE_YEAR}}{{UNICODE_SP}}(##RELEASE_YEAR##){{#/}}",
-    content_osd_1_textarea_3_audio = "{{#|TITLE}}##TITLE##{{#|FILENAME}}##FILENAME##{{#/}}",
+    content_osd_1_textarea_1_audio = "{{#?ARTIST}}##ARTIST##{{#?DIRNAME_UP}}##DIRNAME_UP##{{#/}}",
+    content_osd_1_textarea_2_audio = "{{#?ALBUM}}##ALBUM##{{#?DIRNAME}}##DIRNAME##{{#/}}",
+    content_osd_1_textarea_2_reldate_audio = "{{#?RELEASE_YEAR}}{{UNICODE_SP}}(##RELEASE_YEAR##){{#/}}",
+    content_osd_1_textarea_3_audio = "{{#?TITLE}}##TITLE##{{#?FILENAME}}##FILENAME##{{#/}}",
     content_osd_1_textarea_4_audio = "##TEXTAREA_4_GEN##",
     content_osd_2_textarea_1_audio = "##CHAPTERTITLE##",
 
-    content_osd_1_textarea_1_audio_withalbumart = "{{#|ARTIST}}##ARTIST##{{#|DIRNAME_UP}}##DIRNAME_UP##{{#/}}",
-    content_osd_1_textarea_2_audio_withalbumart = "{{#|ALBUM}}##ALBUM##{{#|DIRNAME}}##DIRNAME##{{#/}}",
-    content_osd_1_textarea_2_reldate_audio_withalbumart = "{{#|RELEASE_YEAR}}{{UNICODE_SP}}(##RELEASE_YEAR##){{#/}}",
-    content_osd_1_textarea_3_audio_withalbumart = "{{#|TITLE}}##TITLE##{{#|FILENAME}}##FILENAME##{{#/}}",
+    content_osd_1_textarea_1_audio_withalbumart = "{{#?ARTIST}}##ARTIST##{{#?DIRNAME_UP}}##DIRNAME_UP##{{#/}}",
+    content_osd_1_textarea_2_audio_withalbumart = "{{#?ALBUM}}##ALBUM##{{#?DIRNAME}}##DIRNAME##{{#/}}",
+    content_osd_1_textarea_2_reldate_audio_withalbumart = "{{#?RELEASE_YEAR}}{{UNICODE_SP}}(##RELEASE_YEAR##){{#/}}",
+    content_osd_1_textarea_3_audio_withalbumart = "{{#?TITLE}}##TITLE##{{#?FILENAME}}##FILENAME##{{#/}}",
     content_osd_1_textarea_4_audio_withalbumart = "##TEXTAREA_4_GEN##",
     content_osd_2_textarea_1_audio_withalbumart = "##CHAPTERTITLE##",
 
     content_osd_1_textarea_1_video = "##DIRNAME_UP##",
     content_osd_1_textarea_2_video = "##DIRNAME##",
-    content_osd_1_textarea_2_reldate_video = "{{#|RELEASE_YEAR}}{{UNICODE_SP}}(##RELEASE_YEAR##){{#/}}",
-    content_osd_1_textarea_3_video = "{{#|TITLE}}##TITLE##{{#|FILENAME}}##FILENAME##{{#/}}",
+    content_osd_1_textarea_2_reldate_video = "{{#?RELEASE_YEAR}}{{UNICODE_SP}}(##RELEASE_YEAR##){{#/}}",
+    content_osd_1_textarea_3_video = "{{#?TITLE}}##TITLE##{{#?FILENAME}}##FILENAME##{{#/}}",
     content_osd_1_textarea_4_video = "##TEXTAREA_4_GEN##",
     content_osd_2_textarea_1_video = "##CHAPTERTITLE##",
 
-    content_osd_1_textarea_1_image = "{{#|ARTIST}}##ARTIST##{{#|DIRNAME_UP}}##DIRNAME_UP##{{#/}}",
-    content_osd_1_textarea_2_image = "{{#|ALBUM}}##ALBUM##{{#|DIRNAME}}##DIRNAME##{{#/}}",
-    content_osd_1_textarea_2_reldate_image = "{{#|RELEASE_YEAR}}{{UNICODE_SP}}(##RELEASE_YEAR##){{#/}}",
-    content_osd_1_textarea_3_image = "{{#|TITLE}}##TITLE##{{#|FILENAME}}##FILENAME##{{#/}}",
+    content_osd_1_textarea_1_image = "{{#?ARTIST}}##ARTIST##{{#?DIRNAME_UP}}##DIRNAME_UP##{{#/}}",
+    content_osd_1_textarea_2_image = "{{#?ALBUM}}##ALBUM##{{#?DIRNAME}}##DIRNAME##{{#/}}",
+    content_osd_1_textarea_2_reldate_image = "{{#?RELEASE_YEAR}}{{UNICODE_SP}}(##RELEASE_YEAR##){{#/}}",
+    content_osd_1_textarea_3_image = "{{#?TITLE}}##TITLE##{{#?FILENAME}}##FILENAME##{{#/}}",
     content_osd_1_textarea_4_image = "##TEXTAREA_4_GEN##",
     content_osd_2_textarea_1_image = "",
 
@@ -302,8 +302,8 @@ local options = {
 
     -- Global string substitutions for pathname fallback
 
-    -- For *_gsubpatt_* options, so called "patterns" apply as documented in Lua
-    -- documentation:
+    -- For *_gsubpatt_* options, so called Lua "patterns" apply as documented
+    -- in the documentation:
     --   https://www.lua.org/manual/5.1/manual.html#5.4.1
 
     -- Characters after equal sign '=' are not interpreted specially,
@@ -349,6 +349,7 @@ local options = {
     pathname_fallback_filename_gsubpatt_3 = "",
     pathname_fallback_filename_gsubrepl_3 = "",
 
+    -- cut-here --
     -- FIXME: Remove options below on next release.
     -- Enable pathname fallback for text area
     enable_pathname_fallback_textarea_1 = true,
@@ -1037,9 +1038,8 @@ local ass_tmpl = {
 
 local tmpl_token_type = {
     TEXT = "_text_",
-    COND = "_cond_",
-    OR = "_or_",
-    OR_END = "_or_end_",
+    COND_OR = "_cond_or_",
+    COND_OR_END = "_cond_or_end_",
 }
 
 local function ass_styleoverride_fontstyle(italic, bold, str)
@@ -1209,7 +1209,7 @@ local function ass_prepare_templates()
                     section_op,
                     section_var,
                     section_text =
-                        string.find(tmpl, "{{#([?|])(.-)}}(.-){{#/}}", curr_pos)
+                        string.find(tmpl, "{{#([?])(.-)}}(.-){{#/}}", curr_pos)
 
                 if idx_section_start and idx_section_end
                     and section_op and section_var and section_text
@@ -1227,23 +1227,9 @@ local function ass_prepare_templates()
 
                     if section_op == "?"
                     then
-                        curr_token_type = tmpl_token_type.COND
+                        curr_token_type = tmpl_token_type.COND_OR
 
-                        token = {
-                            token_type =
-                                curr_token_type,
-                            token_var =
-                                section_var,
-                            token_text =
-                                section_text
-                        }
-                        table.insert(tmpl_tokens, token)
-
-                    elseif section_op == "|"
-                    then
-                        curr_token_type = tmpl_token_type.OR
-
-                        for section_text, next_section_var in string.gmatch(section_text .. "{{#|}}", "(.-){{#|(.-)}}")
+                        for section_text, next_section_var in string.gmatch(section_text .. "{{#?}}", "(.-){{#[?](.-)}}")
                         do
                             token = {
                                 token_type =
@@ -1259,7 +1245,7 @@ local function ass_prepare_templates()
 
                         token = {
                             token_type =
-                                tmpl_token_type.OR_END,
+                                tmpl_token_type.COND_OR_END,
                             token_var =
                                 nil,
                             token_text =
@@ -1787,7 +1773,7 @@ local function tmpl_fill_content(tmpl_tokens, tmpl_data)
         msg.trace("tmpl_fill_content(): token: " ..
             utils.to_string(token))
 
-        if ORed and token.token_type == tmpl_token_type.OR_END
+        if ORed and token.token_type == tmpl_token_type.COND_OR_END
         then
             ORed = false
         end
@@ -1795,11 +1781,7 @@ local function tmpl_fill_content(tmpl_tokens, tmpl_data)
         if token.token_type == tmpl_token_type.TEXT
         then
             tmpl = tmpl .. token.token_text
-        elseif token.token_type == tmpl_token_type.COND
-                and str_isnonempty(lazyget_tmpl_data(tmpl_data, token.token_var))
-        then
-            tmpl = tmpl .. token.token_text
-        elseif token.token_type == tmpl_token_type.OR
+        elseif token.token_type == tmpl_token_type.COND_OR
                 and not ORed -- keep ORed before lazy eval to event. skip it
                 and str_isnonempty(lazyget_tmpl_data(tmpl_data, token.token_var))
         then
