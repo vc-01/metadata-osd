@@ -1,3 +1,8 @@
+metadata-osd-0.6.1 / 2023-11-01
+===============================
+ * fix: Chapter title (offset) for audio files with
+        internal chapters
+
 metadata-osd-0.6.0 / 2023-07-02
 ===============================
  * Added: Pathname fallback on/off switch options:

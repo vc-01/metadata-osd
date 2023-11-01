@@ -1,5 +1,5 @@
 --[[
-metadata_osd. Version 0.6.0
+metadata_osd. Version 0.6.1
 
 Copyright (c) 2022-2023 Vladimir Chren
 
@@ -1547,7 +1547,7 @@ local tmpl_var = {
                 --   seems to contain song name for audio files with chapters
                 title_str =
                     mp.get_property(
-                        "chapter-list/" .. tostring(prop_chapter_curr) .. "/title")
+                        "chapter-list/" .. tostring(prop_chapter_curr - 1) .. "/title")
 
             -- meta: Title
             else
