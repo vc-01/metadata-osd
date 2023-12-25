@@ -1,5 +1,5 @@
 --[[
-metadata_osd. Version 0.6.1
+metadata_osd. Version 0.6.2
 
 Copyright (c) 2022-2023 Vladimir Chren
 
@@ -1440,8 +1440,8 @@ end
 local function get_abspath()
     local path =
         utils.join_path(
-            mp.get_property("working-directory"),
-            mp.get_property("path")
+            mp.get_property("working-directory", ""),
+            mp.get_property("path", "")
         )
 
     -- replace all current dir refs '/./' with '/'
@@ -1546,7 +1546,7 @@ local tmpl_var = {
                 -- meta: Chapter Title
                 --   seems to contain song name for audio files with chapters
                 title_str =
-                    mp.get_property(
+                    mp.get_property_osd(
                         "chapter-list/" .. tostring(prop_chapter_curr - 1) .. "/title")
 
             -- meta: Title
@@ -1834,7 +1834,7 @@ local function on_metadata_change(metadata_key, metadata_val)
     --[[
     The incoming table with metadata can have all the possible letter
     capitalizations for table keys which are case sensitive in Lua -->
-    properties are always querried via mp.get_property().
+    properties are always querried via mp.get_property_*().
     ]]
 
     local osd_tmpl = ass_tmpl.osd_1.curr_tmpl
