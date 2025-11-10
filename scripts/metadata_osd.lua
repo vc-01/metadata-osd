@@ -350,13 +350,6 @@ local options = {
     pathname_fallback_filename_gsubrepl_3 = "",
 
     -- cut-here --
-    -- FIXME: Remove options below on next release.
-    -- Enable pathname fallback for text area
-    enable_pathname_fallback_textarea_1 = true,
-    enable_pathname_fallback_textarea_2 = true,
-    enable_pathname_fallback_textarea_3 = true,
-    -- Enable pathname fallback
-    enable_pathname_fallback_dirname_up = true,
 }
 
 opt.read_options(options)
@@ -1655,9 +1648,6 @@ local tmpl_var = {
             local dirname_up_str = nil
 
             if options.enable_pathname_fallback_dirnameup
-                -- FIXME: Remove option below on next release
-                and options.enable_pathname_fallback_dirname_up
-                and options.enable_pathname_fallback_textarea_1
             then
                 dirname_up_str =
                     string.match(get_abspath(), ".*[/\\](.*)[/\\].*[/\\].*")
@@ -1680,8 +1670,6 @@ local tmpl_var = {
             local dirname_str = nil
 
             if options.enable_pathname_fallback_dirname
-                -- FIXME: Remove option below on next release
-                and options.enable_pathname_fallback_textarea_2
             then
                 dirname_str =
                     string.match(get_abspath(), ".*[/\\](.*)[/\\].*")
@@ -1704,8 +1692,6 @@ local tmpl_var = {
             local filename_str = nil
 
             if options.enable_pathname_fallback_filename
-                -- FIXME: Remove option below on next release
-                and options.enable_pathname_fallback_textarea_3
             then
                 filename_str =
                     mp.get_property_osd("filename/no-ext")
