@@ -1,7 +1,7 @@
 --[[
 metadata_osd. Version 0.6.2
 
-Copyright (c) 2022-2023 Vladimir Chren
+Copyright (c) 2022-2025 Vladimir Chren
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -110,7 +110,7 @@ local options = {
     --  TEXT AREA 1           Artist                    < empty >
     --  TEXT AREA 2           Album                     Uploader
     --  TEXT AREA 2 RELDATE   Release Year              < empty >
-    --  TEXT AREA 3           Title                     Media Title
+    --  TEXT AREA 3           Title                     Media Title /File Date Tags/
     --  TEXT AREA 4           Playlist Position /       <--
     --                        Playlist Count
     -- ===================== ========================= ======================
@@ -296,7 +296,8 @@ local options = {
 
     content_osd_1_textarea_1_stream = "",
     content_osd_1_textarea_2_stream = "##UPLOADER##",
-    content_osd_1_textarea_3_stream = "##MEDIATITLE##",
+    content_osd_1_textarea_2_reldate_stream = "",
+    content_osd_1_textarea_3_stream = "##MEDIATITLE##{{#?FILEDATETAG}} /##FILETAG_YEAR##-##FILETAG_MONTH##-##FILETAG_DAY##/{{#/}}",
     content_osd_1_textarea_4_stream = "##TEXTAREA_4_GEN##",
     content_osd_2_textarea_1_stream = "##CHAPTERTITLE##",
 
@@ -380,6 +381,8 @@ local osd_enabled_usertoggled = false
 local osd_autohide_usertoggled = false
 local curr_mediatype = nil
 local curr_state = state.OSD_HIDDEN
+local observing_metadata = false
+local last_chaptertitle = nil
 local osd_overlay_osd_1 = mp.create_osd_overlay("ass-events")
 local osd_overlay_osd_2 = mp.create_osd_overlay("ass-events")
 local osd_timer -- forward declaration
@@ -1305,9 +1308,9 @@ local function show_osd_1()
                 osd_timer:kill()
                 osd_timer:resume()
             end
+        end
 
         curr_state = state.SHOWING_OSD_1
-        end
     end
 end
 
@@ -1323,8 +1326,31 @@ local function show_osd_2()
                 osd_timer:kill()
                 osd_timer:resume()
             end
+        end
 
         curr_state = state.SHOWING_OSD_2
+    end
+end
+
+local function show_osd(metadata_key)
+    msg.debug("show_osd(): " .. tostring(metadata_key))
+
+    if metadata_key and
+        metadata_key == "chapter-metadata/title"
+    then
+        if curr_state == state.SHOWING_OSD_2 or
+            (osd_autohide and curr_state == state.OSD_HIDDEN)
+        then
+            show_osd_2()
+        elseif curr_state == state.SHOWING_OSD_1
+        then
+            show_osd_1()
+        end
+    else
+        if curr_state == state.SHOWING_OSD_1 or
+            (osd_autohide and curr_state == state.OSD_HIDDEN)
+        then
+            show_osd_1()
         end
     end
 end
@@ -1348,9 +1374,11 @@ local function toggle_osd_1()
     msg.debug("toggle_osd_1()")
 
     if osd_enabled then
-        if curr_state == state.SHOWING_OSD_1 then
+        if curr_state == state.SHOWING_OSD_1 and
+            osd_has_data(osd_overlay_osd_1)
+        then
             hide_osd()
-        else
+        elseif osd_has_data(osd_overlay_osd_1) then
             show_osd_1()
         end
     end
@@ -1360,9 +1388,11 @@ local function toggle_osd_2()
     msg.debug("toggle_osd_2()")
 
     if osd_enabled then
-        if curr_state == state.SHOWING_OSD_2 then
+        if curr_state == state.SHOWING_OSD_2 and
+            osd_has_data(osd_overlay_osd_2)
+        then
             hide_osd()
-        else
+        elseif osd_has_data(osd_overlay_osd_2) then
             show_osd_2()
         end
     end
@@ -1451,14 +1481,26 @@ local function get_chapter_pos()
     return prop_chapter_curr, prop_chapters_total
 end
 
-local function mediatype_is_stream()
-    local prop_path           = mp.get_property_osd("path")
-    local prop_streamfilename = mp.get_property_osd("stream-open-filename")
-    local prop_fileformat     = mp.get_property_osd("file-format")
+local function media_is_remotesource()
+    -- check if file format is HTTP Live Streaming (hls)
+    local fileformat = mp.get_property_osd("file-format")
+    if fileformat == "multi/hls" then
+        msg.debug("media_is_remotesource(): current media source: remote (hls)")
+        return true
+    end
 
-    return
-        prop_fileformat == "hls" or -- hls --> http live streaming
-        prop_path ~= prop_streamfilename -- path ~= actual media URL
+    -- check if the path starts with a protocol scheme (e.g., "http://")
+    local path = mp.get_property_osd("path")
+    if path and
+        not string.match(path, "^file://") and
+        string.match(path, "^%a+://")
+    then
+        msg.debug("media_is_remotesource(): current media source: remote")
+        return true
+    end
+
+    msg.debug("media_is_remotesource(): current media source: local")
+    return false
 end
 
 local tmpl_var = {
@@ -1476,6 +1518,12 @@ local tmpl_var = {
     },
     chaptertitle = {
         tmpl_key = "CHAPTERTITLE",
+        gatherfunc = function()
+            local chapter_title =
+                mp.get_property_osd("chapter-metadata/title")
+            last_chaptertitle = chapter_title
+            return chapter_title
+        end
     },
 
     artist = {
@@ -1551,18 +1599,98 @@ local tmpl_var = {
         end
     },
 
+    filetag_day = {
+        tmpl_key = "FILETAG_DAY",
+        gatherfunc = function()
+            local function filetag_capture_day(s)
+                if str_isnonempty(s) then
+                    local _, _, s_match = string.find(s, '^[%d][%d][%d][%d][%d][%d]([%d][%d])$')
+                    if s_match then
+                        return s_match
+                    end
+                end
+                return nil
+            end
+
+            local prop_date =
+                mp.get_property_osd("metadata/by-key/date")
+            local filetag_day_str =
+                filetag_capture_day(prop_date)
+            if filetag_day_str and
+                tonumber(filetag_day_str) >= 1 and
+                tonumber(filetag_day_str) <= 31
+            then
+                return filetag_day_str
+            end
+            return nil
+        end
+    },
+
+    filetag_month = {
+        tmpl_key = "FILETAG_MONTH",
+        gatherfunc = function()
+            local function filetag_capture_month(s)
+                if str_isnonempty(s) then
+                    local _, _, s_match = string.find(s, '^[%d][%d][%d][%d]([%d][%d])[%d][%d]$')
+                    if s_match then
+                        return s_match
+                    end
+                end
+                return nil
+            end
+
+            local prop_date =
+                mp.get_property_osd("metadata/by-key/date")
+            local filetag_month_str =
+                filetag_capture_month(prop_date)
+            if filetag_month_str and
+                tonumber(filetag_month_str) >= 1 and
+                tonumber(filetag_month_str) <= 12
+            then
+                return filetag_month_str
+            end
+            return nil
+        end
+    },
+
+    filetag_year = {
+        tmpl_key = "FILETAG_YEAR",
+        gatherfunc = function()
+            local function filetag_capture_year(s)
+                if str_isnonempty(s) then
+                    local _, _, s_match = string.find(s, '^([%d][%d][%d][%d])[%d][%d][%d][%d]$')
+                    if s_match then
+                        return s_match
+                    end
+                end
+                return nil
+            end
+
+            local prop_date =
+                mp.get_property_osd("metadata/by-key/date")
+            local filetag_year_str =
+                filetag_capture_year(prop_date)
+            if filetag_year_str and
+                -- how to check for a valid year of creation?
+                tonumber(filetag_year_str) < 2100
+            then
+                return filetag_year_str
+            end
+            return nil
+        end
+    },
+
     release_year = {
         tmpl_key = "RELEASE_YEAR",
         gatherfunc = function()
-            local function str_capture4digits(s)
-                res = ""
+            local function str_capture_any_4digits(s)
                 if str_isnonempty(s) then
                     local _, _, s_match = string.find(s, '([%d][%d][%d][%d])')
                     if s_match then
                         res = s_match
                     end
                 end
-                return res
+                return nil
             end
 
             local prop_chapter_curr, prop_chapters_total =
@@ -1570,7 +1698,13 @@ local tmpl_var = {
             local release_year_str =
                 mp.get_property_osd("metadata/by-key/date")
             release_year_str =
-                str_capture4digits(release_year_str)
+                str_capture_any_4digits(release_year_str)
+            if release_year_str and
+                -- how to check for a valid year of creation?
+                tonumber(release_year_str) >= 2100
+            then
+                return nil
+            end
 
             -- For audio files with internal chapters ...
             if prop_chapter_curr > 0 and
@@ -1583,7 +1717,7 @@ local tmpl_var = {
                     -- meta: Track
                     --   contains _often_ release date, use it in a pinch.
                     local prop_meta_track = mp.get_property_osd("metadata/by-key/track")
-                    prop_meta_track = str_capture4digits(prop_meta_track)
+                    prop_meta_track = str_capture_any_4digits(prop_meta_track)
 
                     if str_isnonempty(prop_meta_track)
                     then
@@ -1630,6 +1764,18 @@ local tmpl_var = {
             local uploader_str =
                 mp.get_property_osd("metadata/by-key/uploader")
             return uploader_str
+        end
+    },
+
+    filedatetag = {
+        tmpl_key = "FILEDATETAG",
+        gatherfunc = function()
+            local filedatetag_str =
+                mp.get_property_osd("metadata/by-key/date")
+            if filedatetag_str and tonumber(filedatetag_str) then
+                return filedatetag_str
+            end
+            return nil
         end
     },
 
@@ -1727,13 +1873,15 @@ local function lazyget_tmpl_data(tmpl_data, tmpl_var_s)
     return tmpl_data[tmpl_var_s]
 end
 
-local function tmpl_fill_content(tmpl_tokens, tmpl_data)
+local function tmpl_render(tmpl_tokens, tmpl_data)
+    msg.debug("tmpl_render()")
+
     local tmpl = ""
     local ORed = false
 
     for _, token in ipairs(tmpl_tokens)
     do
-        msg.trace("tmpl_fill_content(): token: " ..
+        msg.trace("tmpl_render(): token: " ..
             utils.to_string(token))
 
         if ORed and token.token_type == tmpl_token_type.COND_OR_END
@@ -1753,7 +1901,7 @@ local function tmpl_fill_content(tmpl_tokens, tmpl_data)
         end
     end
 
-    msg.debug("tmpl_fill_content(): tmpl:  " .. tmpl)
+    -- msg.debug("tmpl_render(): tmpl:  " .. tmpl)
 
     local curr_pos = 1
 
@@ -1765,8 +1913,6 @@ local function tmpl_fill_content(tmpl_tokens, tmpl_data)
 
         if idx_start and idx_end and tmpl_var
         then
-            msg.debug("tmpl_fill_content(): found template var: " ..
-                tmpl_var)
             -- FIXME: Is it better to build the OSD string here ?
             lazyget_tmpl_data(tmpl_data, tmpl_var)
             curr_pos = idx_end + 1
@@ -1775,12 +1921,12 @@ local function tmpl_fill_content(tmpl_tokens, tmpl_data)
         end
     until curr_pos >= string.len(tmpl)
 
+    -- template variable substitution
     for strid, val in pairs(tmpl_data)
     do
         val = tostring(val)
 
-        msg.debug("tmpl_fill_content(): " ..
-            strid .. " --> " .. val)
+        -- msg.debug("tmpl_render(): " .. strid .. " --> " .. val)
 
         tmpl = string.gsub(
             tmpl,
@@ -1793,19 +1939,53 @@ local function tmpl_fill_content(tmpl_tokens, tmpl_data)
     return tmpl
 end
 
+local function tmpl_render_all(tmpl_data)
+    -- OSD-1
+    local osd_tmpl = ass_tmpl.osd_1.curr_tmpl
+    if osd_tmpl then
+        osd_overlay_osd_1.data =
+            tmpl_render(osd_tmpl, tmpl_data)
+    end
+    -- OSD-2
+    if options.enable_osd_2 then
+        local osd_tmpl = ass_tmpl.osd_2.curr_tmpl
+        if osd_tmpl then
+            osd_overlay_osd_2.data =
+                tmpl_render(osd_tmpl, tmpl_data)
+        end
+    end
+end
+
 local function on_metadata_change(metadata_key, metadata_val)
+    msg.debug("on_metadata_change(): " ..
+        tostring(metadata_key) .. ": " ..
+        tostring(metadata_val))
+
     --[[
     The incoming table with metadata can have all the possible letter
-    capitalizations for table keys which are case sensitive in Lua -->
-    properties are always querried via mp.get_property_*().
+    capitalizations for table keys which are case sensitive in Lua,
+    therefore properties are always queried via mp.get_property_*().
     ]]
 
-    local osd_tmpl = ass_tmpl.osd_1.curr_tmpl
-    if not osd_tmpl then
-        msg.warn("on_metadata_change(): Template for OSD-1 not yet available.")
-        return
+    -- optimization: don't evaluate templates again if chapter title hasn't
+    -- changed since last evaluation.
+    if metadata_key == "chapter-metadata/title" then
+        if not metadata_val then
+            return
+        elseif last_chaptertitle and last_chaptertitle == metadata_val then
+            show_osd(metadata_key)
+            return
+        end
     end
+
     local tmpl_data = {}
+    local osd_tmpl
+
+    -- OSD-1
+    osd_tmpl = ass_tmpl.osd_1.curr_tmpl
+
+    if osd_tmpl
+    then
 
     -- ┌─────────────────┐
     -- │ TEXT AREA 4     │
@@ -1923,37 +2103,10 @@ local function on_metadata_change(metadata_key, metadata_val)
     tmpl_data[tmpl_var.textarea_4_gen.tmpl_key] =
         textarea_4_str
 
-    osd_overlay_osd_1.data =
-        tmpl_fill_content(osd_tmpl, tmpl_data)
-
-    -- OSD-2
-    -- ┌─────────────────┐
-    -- │ TEXT AREA 1     │
-    -- └─────────────────┘
-    osd_tmpl = ass_tmpl.osd_2.curr_tmpl
-
-    if osd_tmpl
-    then
-        -- meta: Chapter Title
-        if options.enable_osd_2
-            and metadata_key == "chapter-metadata/title"
-            and str_isnonempty(metadata_val)
-        then
-            tmpl_data = {}
-            tmpl_data[tmpl_var.chaptertitle.tmpl_key] =
-                metadata_val
-            osd_overlay_osd_2.data =
-                tmpl_fill_content(osd_tmpl, tmpl_data)
-        end
-    else
-        msg.warn("on_metadata_change(): Template for OSD-2 not yet available.")
     end
 
-    if metadata_key == "chapter-metadata/title" and (curr_state == state.SHOWING_OSD_2 or (osd_autohide and curr_state == state.OSD_HIDDEN)) then
-        show_osd_2()
-    else
-        show_osd_1()
-    end
+    tmpl_render_all(tmpl_data)
+    show_osd(metadata_key)
 end
 
 local function master_osd_enable()
@@ -1978,16 +2131,6 @@ local function master_osd_enable()
         options.key_reset_usertoggled,
         "reset_usertoggled",
         reset_usertoggled)
-
-    mp.observe_property(
-        "metadata",
-        "native",
-        on_metadata_change)
-
-    mp.observe_property(
-        "chapter-metadata/title",
-        "string",
-        on_metadata_change)
 
     osd_enabled = true
     show_osd_1()
@@ -2026,7 +2169,7 @@ local function toggle_enable()
 end
 
 reeval_osd_enabled = function()
-    if not osd_enabled_usertoggled then
+    if not osd_enabled_usertoggled and not osd_autohide_usertoggled then
         osd_enabled_currstate = osd_enabled
         osd_enabled_newstate = false
 
@@ -2057,7 +2200,7 @@ local function on_tracklist_change(name, tracklist)
     msg.debug("on_tracklist_change()")
 
     local prev_mediatype = curr_mediatype
-    local prev_mediatype_is_stream = curr_mediatype == mediatype.STREAM
+    local prev_media_is_remotesource = curr_mediatype == mediatype.STREAM
     curr_mediatype = nil
 
     if tracklist then
@@ -2084,20 +2227,39 @@ local function on_tracklist_change(name, tracklist)
         end
     end
 
-    local curr_mediatype_is_stream = mediatype_is_stream()
+    -- transient state after the current media tracks have been unloaded
+    -- and before the new media tracks have been loaded and any of them
+    -- selected.
+    if not curr_mediatype then
+        mp.unobserve_property(on_metadata_change)
+        observing_metadata = false
+        last_chaptertitle = nil
+
+        if osd_autohide then
+            -- handle special case if OSD-2 is active while loading new
+            -- media, OSD-1 is therefore shown after the media is loaded.
+            curr_state = state.OSD_HIDDEN
+        end
+        -- remove current text in all OSDs, because new media might not have any.
+        osd_overlay_osd_1:remove()
+        osd_overlay_osd_2:remove()
+        return
+    end
+
+    local curr_media_is_remotesource = media_is_remotesource()
 
     if curr_mediatype
         and (prev_mediatype ~= curr_mediatype
-        or prev_mediatype_is_stream ~= curr_mediatype_is_stream)
+        or prev_media_is_remotesource ~= curr_media_is_remotesource)
     then
         msg.debug("on_tracklist_change(): current media type: " ..
             curr_mediatype:gsub("^%l", string.upper) ..
-            (curr_mediatype_is_stream and " (stream)" or ""))
+            (curr_media_is_remotesource and " (remote source)" or ""))
 
         ass_tmpl.osd_1.curr_tmpl = nil
         ass_tmpl.osd_2.curr_tmpl = nil
 
-        if curr_mediatype_is_stream
+        if curr_media_is_remotesource
         then
             ass_tmpl.osd_1.curr_tmpl =
                 ass_tmpl.osd_1.tokens_media[mediatype.STREAM]
@@ -2116,6 +2278,18 @@ local function on_tracklist_change(name, tracklist)
                 end
             end
         end
+    end
+
+    if not observing_metadata then
+        on_metadata_change(nil, nil)
+
+        -- observe further chapter metadata updates
+        mp.observe_property(
+            "chapter-metadata/title",
+            "string",
+            on_metadata_change)
+
+        observing_metadata = true;
     end
 
     reeval_osd_enabled()
@@ -2144,9 +2318,8 @@ mp.observe_property(
     "native",
     on_tracklist_change)
 
--- FIXME: Create but don't start the timer. How?
-osd_timer = mp.add_timeout( -- create & start the timer
+osd_timer = mp.add_timeout(
         options.autohide_timeout_sec,
-        osd_timeout_handler
+        osd_timeout_handler,
+        true -- start manually later when needed
         )
-osd_timer:kill() -- stop & reset the timer
