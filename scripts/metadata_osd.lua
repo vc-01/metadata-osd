@@ -1687,7 +1687,7 @@ local tmpl_var = {
                 if str_isnonempty(s) then
                     local _, _, s_match = string.find(s, '([%d][%d][%d][%d])')
                     if s_match then
-                        res = s_match
+                        return s_match
                     end
                 end
                 return nil
